@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chromaplot"
+version = "0.1.0"
+description = "Chromatography plotting and analysis tool"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "PyQt5",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["chromaplot*"]
+
+[project.scripts]
+chromaplot_2 = "chromaplot.gui.app:main"
