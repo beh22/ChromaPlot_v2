@@ -158,6 +158,12 @@ class PlotSettingsPanel(QWidget):
         )
         display_form.addRow("Legend", self.legend_location_combo)
 
+        self.legend_label_mode_combo = QComboBox()
+        self.legend_label_mode_combo.addItems(
+            ["auto", "curve", "dataset", "dataset_curve"]
+        )
+        display_form.addRow("Legend labels", self.legend_label_mode_combo)
+
         self.legend_bbox_widget = QWidget()
         bbox_form = QFormLayout(self.legend_bbox_widget)
         bbox_form.setContentsMargins(0, 0, 0, 0)
@@ -324,6 +330,7 @@ class PlotSettingsPanel(QWidget):
 
         self.show_legend_check.stateChanged.connect(self._apply_all)
         self.legend_location_combo.currentTextChanged.connect(self._apply_all)
+        self.legend_label_mode_combo.currentTextChanged.connect(self._apply_all)
         self.grid_check.stateChanged.connect(self._apply_all)
         self.clean_plot_check.stateChanged.connect(self._apply_all)
 
@@ -406,6 +413,8 @@ class PlotSettingsPanel(QWidget):
         self.show_legend_check.setChecked(settings.show_legend)
         self.legend_location_combo.setCurrentText(settings.legend_location)
 
+        self.legend_label_mode_combo.setCurrentText(settings.legend_label_mode)
+
         self.legend_bbox_x_spin.setValue(settings.legend_bbox_x)
         self.legend_bbox_y_spin.setValue(settings.legend_bbox_y)
         self.legend_columns_spin.setValue(settings.legend_columns)
@@ -477,7 +486,7 @@ class PlotSettingsPanel(QWidget):
 
         self.settings.show_legend = self.show_legend_check.isChecked()
         self.settings.legend_location = self.legend_location_combo.currentText()
-
+        self.settings.legend_label_mode = self.legend_label_mode_combo.currentText()
         self.settings.legend_bbox_x = self.legend_bbox_x_spin.value()
         self.settings.legend_bbox_y = self.legend_bbox_y_spin.value()
         self.settings.legend_columns = self.legend_columns_spin.value()

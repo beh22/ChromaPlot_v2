@@ -12,7 +12,7 @@ from matplotlib.ticker import MultipleLocator
 from .models import Curve, Dataset, Project, PlotSettings
 
 
-LegendLabelMode = Literal["auto", "curve", "dataset_curve"]
+LegendLabelMode = Literal["auto", "curve", "dataset", "dataset_curve"]
 
 
 # -----------------------------------------------------------------------------
@@ -59,7 +59,7 @@ def plot_project(
 
     with style_context:
         for dataset, curve in visible_items:
-            label = make_curve_label(project, dataset, curve, mode=label_mode)
+            label = make_curve_label(project, dataset, curve, mode=project.plot_settings.legend_label_mode)
             plot_curve(ax, curve, label=label)
 
         apply_plot_settings(
@@ -127,6 +127,9 @@ def make_curve_label(
     """
     if mode == "curve":
         return curve.name
+    
+    if mode == "dataset":
+        return dataset.name
 
     if mode == "dataset_curve":
         return f"{dataset.name} — {curve.name}"

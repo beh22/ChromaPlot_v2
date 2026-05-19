@@ -31,6 +31,7 @@ from .dataset_tree import DatasetTreeWidget
 from .plot_canvas import PlotCanvas
 from .curve_settings_panel import CurveSettingsPanel
 from .plot_settings_panel import PlotSettingsPanel
+from .dataset_settings_panel import DatasetSettingsPanel
 
 
 class MainWindow(QMainWindow):
@@ -51,10 +52,12 @@ class MainWindow(QMainWindow):
 
         self.plot_canvas = PlotCanvas()
 
+        self.dataset_settings_panel = DatasetSettingsPanel()
         self.curve_settings_panel = CurveSettingsPanel()
         self.plot_settings_panel = PlotSettingsPanel()
 
         self.settings_tabs = QTabWidget()
+        self.settings_tabs.addTab(self.dataset_settings_panel, "Dataset")
         self.settings_tabs.addTab(self.curve_settings_panel, "Curve")
         self.settings_tabs.addTab(self.plot_settings_panel, "Plot")
         self.settings_tabs.setMinimumWidth(300)
@@ -179,6 +182,11 @@ class MainWindow(QMainWindow):
 
         self.dataset_tree.dataset_rename_requested.connect(self.rename_dataset)
         self.dataset_tree.dataset_remove_requested.connect(self.remove_dataset)
+
+        self.dataset_settings_panel.dataset_changed.connect(self.on_dataset_settings_changed)
+        self.dataset_settings_panel.dataset_remove_requested.connect(self.remove_dataset)
+        self.dataset_settings_panel.show_all_curves_requested.connect(self.show_all_dataset_curves)
+        self.dataset_settings_panel.hide_all_curves_requested.connect(self.hide_all_dataset_curves)
 
     def _build_status_bar(self) -> None:
         self.status_label = QLabel("")
@@ -384,6 +392,11 @@ class MainWindow(QMainWindow):
             return
 
         curve.visible = visible
+
+        current_dataset = self.dataset_settings_panel.dataset
+        if current_dataset is not None:
+            self.dataset_settings_panel.set_dataset(current_dataset)
+
         self.redraw_plot()
         self.mark_dirty()
 
@@ -402,6 +415,8 @@ class MainWindow(QMainWindow):
             return
 
         self.curve_settings_panel.set_curve(None)
+        self.dataset_settings_panel.set_dataset(dataset)
+        self.settings_tabs.setCurrentWidget(self.dataset_settings_panel)
         self.statusBar().showMessage(f"Selected dataset: {dataset.name}", 3000)
 
     def on_curve_settings_changed(self, curve_id: str) -> None:
@@ -467,9 +482,47 @@ class MainWindow(QMainWindow):
             return
 
         self.project.remove_dataset(dataset_id)
+        self.curve_settings_panel.set_curve(None)
+        self.dataset_settings_panel.set_dataset(None)
         self.dataset_tree.set_project(self.project)
         self.redraw_plot()
         self.mark_dirty()
+
+    # ------------------------------------------------------------------
+    # Dataset settings panel interactions
+    # ------------------------------------------------------------------
+
+    def on_dataset_settings_changed(self, dataset_id: str) -> None:
+        self.dataset_tree.set_project(self.project)
+        self.redraw_plot()
+        self.mark_dirty()
+
+    def show_all_dataset_curves(self, dataset_id: str) -> None:
+        dataset = self.project.get_dataset(dataset_id)
+        if dataset is None:
+            return
+
+        for curve in dataset.curves:
+            curve.visible = True
+        
+        self.dataset_settings_panel.set_dataset(dataset)
+        self.dataset_tree.set_project(self.project)
+        self.redraw_plot()
+        self.mark_dirty()
+
+    def hide_all_dataset_curves(self, dataset_id: str) -> None:
+        dataset = self.project.get_dataset(dataset_id)
+        if dataset is None:
+            return
+
+        for curve in dataset.curves:
+            curve.visible = False
+        
+        self.dataset_settings_panel.set_dataset(dataset)
+        self.dataset_tree.set_project(self.project)
+        self.redraw_plot()
+        self.mark_dirty()
+
 
     # ------------------------------------------------------------------
     # Close handling

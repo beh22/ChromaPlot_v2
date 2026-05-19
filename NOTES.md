@@ -19,18 +19,18 @@ can we include window size and locations when saving project, so that they are l
 
 open to welcome dialog with options to start by importing data or loading project - chance to show logo and small info, very similar to v1
 
-remove datasets/curves(?)
-
 stylesheet
 
 apply transforms to all curves in dataset?
 
 add 'help' area
 
-allow changing name of dataset, currently the full dataset name appears in legend with curve name. not great if you are just wanting to overlay uv curves from multiple datasets
 
 decide how to incorporate datasets other than akta - fida, lcms, sec-mals
 
+have settings panel only open once a datset is loaded, and not automatically be included in the main window?
+
+why is main window title: Untitled -- imported_dataset_name - Chromaplot?
 
 write proper readme!
 
