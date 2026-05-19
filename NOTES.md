@@ -27,8 +27,6 @@ apply transforms to all curves in dataset?
 
 add 'help' area
 
-change to cartoon
-
 allow changing name of dataset, currently the full dataset name appears in legend with curve name. not great if you are just wanting to overlay uv curves from multiple datasets
 
 decide how to incorporate datasets other than akta - fida, lcms, sec-mals

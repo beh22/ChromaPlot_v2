@@ -234,12 +234,6 @@ class PlotSettingsPanel(QWidget):
 
         tick_form.addRow(tick_visibility_widget)
 
-        # self.major_ticks_check = QCheckBox("Show major ticks")
-        # tick_form.addRow("", self.major_ticks_check)
-
-        # self.minor_ticks_check = QCheckBox("Show minor ticks")
-        # tick_form.addRow("", self.minor_ticks_check)
-
         self.tick_direction_combo = QComboBox()
         self.tick_direction_combo.addItems(["out", "in", "inout"])
         tick_form.addRow("Direction", self.tick_direction_combo)
@@ -279,6 +273,18 @@ class PlotSettingsPanel(QWidget):
         tick_form.addRow("Minor tick length", self.minor_tick_length_spin)
 
         main_layout.addWidget(self.tick_group)
+
+        # --------------------------
+        # Misc
+        # --------------------------
+
+        self.misc_group = QGroupBox("Misc")
+        misc_form = QFormLayout(self.misc_group)
+
+        self.plot_xkcd_check = QCheckBox("Significantly improve plot")
+        misc_form.addRow("", self.plot_xkcd_check)
+
+        main_layout.addWidget(self.misc_group)
 
         main_layout.addStretch()
 
@@ -343,6 +349,8 @@ class PlotSettingsPanel(QWidget):
 
         self.major_tick_length_spin.valueChanged.connect(self._apply_all)
         self.minor_tick_length_spin.valueChanged.connect(self._apply_all)
+
+        self.plot_xkcd_check.stateChanged.connect(self._apply_all)
 
     def set_current_preview_size(self, width: float, height: float) -> None:
         """Display the current on-screen preview size."""
@@ -428,6 +436,7 @@ class PlotSettingsPanel(QWidget):
         self.major_tick_length_spin.setValue(ticks.major_tick_length)
         self.minor_tick_length_spin.setValue(ticks.minor_tick_length)
 
+        self.plot_xkcd_check.setChecked(settings.plot_xkcd)
         self._updating = False
 
     # ------------------------------------------------------------------
@@ -497,6 +506,8 @@ class PlotSettingsPanel(QWidget):
 
         ticks.major_tick_length = self.major_tick_length_spin.value()
         ticks.minor_tick_length = self.minor_tick_length_spin.value()
+
+        self.settings.plot_xkcd = self.plot_xkcd_check.isChecked()
 
         self.plot_settings_changed.emit()
 

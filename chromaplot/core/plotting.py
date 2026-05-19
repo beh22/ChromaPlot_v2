@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from typing import Literal
 
 import numpy as np
@@ -54,16 +55,19 @@ def plot_project(
 
     visible_items = list(iter_visible_curves(project))
 
-    for dataset, curve in visible_items:
-        label = make_curve_label(project, dataset, curve, mode=label_mode)
-        plot_curve(ax, curve, label=label)
+    style_context = plt.xkcd() if project.plot_settings.plot_xkcd else nullcontext()
 
-    apply_plot_settings(
-        ax,
-        project.plot_settings,
-        has_visible_curves=bool(visible_items),
-        autoscale_limits=autoscale_visible_curves(project) if autoscale_if_no_limits else None,
-    )
+    with style_context:
+        for dataset, curve in visible_items:
+            label = make_curve_label(project, dataset, curve, mode=label_mode)
+            plot_curve(ax, curve, label=label)
+
+        apply_plot_settings(
+            ax,
+            project.plot_settings,
+            has_visible_curves=bool(visible_items),
+            autoscale_limits=autoscale_visible_curves(project) if autoscale_if_no_limits else None,
+        )
 
     # fig.tight_layout(rect=[0, 0, 1, 0.95])
     fig.tight_layout()
@@ -149,7 +153,7 @@ def apply_plot_settings(
     """
     Apply project-level plot settings to an axis.
     """
-    font_family = settings.font_family
+    font_family = "Comic Sans MS" if settings.plot_xkcd else settings.font_family
 
     ax.set_title(
         settings.title,
@@ -217,12 +221,15 @@ def apply_plot_settings(
 
     # Font family for tick labels
     for tick_label in ax.get_xticklabels() + ax.get_yticklabels():
-        tick_label.set_fontfamily(settings.font_family)
+        tick_label.set_fontfamily(font_family)
 
     ax.grid(settings.grid)
 
     if settings.clean_plot:
         apply_clean_plot_style(ax)
+
+    if settings.plot_xkcd:
+        apply_xkcd_style(ax)
 
     if settings.show_legend and has_visible_curves:
 
@@ -254,13 +261,17 @@ def apply_plot_settings(
 def apply_clean_plot_style(ax: Axes) -> None:
     """
     Apply a simple presentation/publication-style clean plot mode.
-
-    This can be expanded later, but for now it removes the top/right spines and
-    avoids a boxed-in look.
     """
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
+def apply_xkcd_style(ax: Axes) -> None:
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.5)
+        spine.set_sketch_params(scale=5, length=100, randomness=6)
+    for line in ax.xaxis.get_ticklines() + ax.yaxis.get_ticklines():
+        line.set_markeredgewidth(1.5)
+        line.set_sketch_params(scale=5, length=100, randomness=10)
 
 # -----------------------------------------------------------------------------
 # Autoscaling
@@ -269,8 +280,8 @@ def apply_clean_plot_style(ax: Axes) -> None:
 def autoscale_visible_curves(
     project: Project,
     *,
-    x_padding_fraction: float = 0.02,
-    y_padding_fraction: float = 0.05,
+    x_padding_fraction: float = 0.01,
+    y_padding_fraction: float = 0.03,
 ) -> tuple[tuple[float, float], tuple[float, float]] | None:
     """
     Calculate axis limits from all visible curves.

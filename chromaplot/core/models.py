@@ -154,6 +154,7 @@ class PlotSettings:
     tick_settings: TickSettings = field(default_factory=TickSettings)
     grid: bool = False
     clean_plot: bool = False
+    plot_xkcd: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -174,6 +175,7 @@ class PlotSettings:
             "tick_settings": self.tick_settings.to_dict(),
             "grid": self.grid,
             "clean_plot": self.clean_plot,
+            "plot_xkcd": self.plot_xkcd,
         }
 
     @classmethod
@@ -202,6 +204,7 @@ class PlotSettings:
             legend_bbox_x=float(data.get("legend_bbox_x", 0.5)),
             legend_bbox_y=float(data.get("legend_bbox_y", 1.12)),
             legend_columns=int(data.get("legend_columns", 5)),
+            plot_xkcd=bool(data.get("plot_xkcd", False)),
         )
     
 
