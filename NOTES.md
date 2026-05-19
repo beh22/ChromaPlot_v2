@@ -8,7 +8,7 @@ add shading, based on fraction numbers or volumes
 integration, vertical marker, other analytical tools?
 
 give warning if it looks like the user is about to load the same dataset twice
-" it looks like dataset NAME is already loaded. are you sure you want to load it again?" or words to that effect
+"it looks like dataset NAME is already loaded. are you sure you want to load it again?" or words to that effect
 
 add secondary axes, optional
 
@@ -32,3 +32,10 @@ change to cartoon
 allow changing name of dataset, currently the full dataset name appears in legend with curve name. not great if you are just wanting to overlay uv curves from multiple datasets
 
 decide how to incorporate datasets other than akta - fida, lcms, sec-mals
+
+
+write proper readme!
+
+have menu within the app for 'file, view' etc.
+
+make changing window size require save?

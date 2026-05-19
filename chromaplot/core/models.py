@@ -146,6 +146,7 @@ class PlotSettings:
     legend_location: str = "best"
     legend_bbox_x: float = 0.5
     legend_bbox_y: float = 1.12
+    legend_columns: int = 5
     figure_width: float = 8.0
     figure_height: float = 5.0
     font_sizes: FontSettings = field(default_factory=FontSettings)
@@ -165,6 +166,7 @@ class PlotSettings:
             "legend_location": self.legend_location,
             "legend_bbox_x": self.legend_bbox_x,
             "legend_bbox_y": self.legend_bbox_y,
+            "legend_columns": self.legend_columns,
             "figure_width": self.figure_width,
             "figure_height": self.figure_height,
             "font_sizes": self.font_sizes.to_dict(),
@@ -199,6 +201,7 @@ class PlotSettings:
             clean_plot=bool(data.get("clean_plot", False)),
             legend_bbox_x=float(data.get("legend_bbox_x", 0.5)),
             legend_bbox_y=float(data.get("legend_bbox_y", 1.12)),
+            legend_columns=int(data.get("legend_columns", 5)),
         )
     
 

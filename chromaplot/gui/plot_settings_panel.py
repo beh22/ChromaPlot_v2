@@ -174,6 +174,10 @@ class PlotSettingsPanel(QWidget):
         self.legend_bbox_y_spin.setDecimals(3)
         bbox_form.addRow("Legend Y", self.legend_bbox_y_spin)
 
+        self.legend_columns_spin = QSpinBox()
+        self.legend_columns_spin.setRange(1, 20)
+        bbox_form.addRow("Legend columns", self.legend_columns_spin)
+
         display_form.addRow(self.legend_bbox_widget)
 
         self.grid_check = QCheckBox("Show grid")
@@ -319,6 +323,7 @@ class PlotSettingsPanel(QWidget):
 
         self.legend_bbox_x_spin.valueChanged.connect(self._apply_all)
         self.legend_bbox_y_spin.valueChanged.connect(self._apply_all)
+        self.legend_columns_spin.valueChanged.connect(self._apply_all)
 
         self.font_family_combo.currentFontChanged.connect(self._apply_all)
 
@@ -395,6 +400,7 @@ class PlotSettingsPanel(QWidget):
 
         self.legend_bbox_x_spin.setValue(settings.legend_bbox_x)
         self.legend_bbox_y_spin.setValue(settings.legend_bbox_y)
+        self.legend_columns_spin.setValue(settings.legend_columns)
         self._update_legend_bbox_visibility()
 
         self.grid_check.setChecked(settings.grid)
@@ -465,6 +471,7 @@ class PlotSettingsPanel(QWidget):
 
         self.settings.legend_bbox_x = self.legend_bbox_x_spin.value()
         self.settings.legend_bbox_y = self.legend_bbox_y_spin.value()
+        self.settings.legend_columns = self.legend_columns_spin.value()
         self._update_legend_bbox_visibility()
 
         self.settings.grid = self.grid_check.isChecked()

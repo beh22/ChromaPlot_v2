@@ -226,22 +226,25 @@ def apply_plot_settings(
 
     if settings.show_legend and has_visible_curves:
 
+        legend_prop = {
+            "family": font_family,
+            "size": settings.font_sizes.legend,
+        }
+
         if settings.legend_location == "outside top":
             legend = ax.legend(
                 loc="upper center",
                 bbox_to_anchor=(settings.legend_bbox_x, settings.legend_bbox_y),
-                fontsize=settings.font_sizes.legend,
                 frameon=not settings.clean_plot,
-                ncol=5,
-                prop={"family": font_family},
+                ncol=settings.legend_columns,
+                prop=legend_prop,
             )
 
         else:
             legend = ax.legend(
                 loc=settings.legend_location,
-                fontsize=settings.font_sizes.legend,
                 frameon=not settings.clean_plot,
-                prop={"family": font_family},
+                prop=legend_prop,
             )
         if legend is not None:
             legend.set_draggable(False)
