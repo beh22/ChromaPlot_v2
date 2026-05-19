@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QMenu
 
 from chromaplot.core.models import Project
 
@@ -17,6 +17,8 @@ class DatasetTreeWidget(QTreeWidget):
     curve_visibility_changed = pyqtSignal(str, bool)
     curve_selected = pyqtSignal(str)
     dataset_selected = pyqtSignal(str)
+    dataset_rename_requested = pyqtSignal(str)
+    dataset_remove_requested = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -26,6 +28,9 @@ class DatasetTreeWidget(QTreeWidget):
         self.setHeaderLabels(["Datasets / Curves"])
         self.itemChanged.connect(self._on_item_changed)
         self.itemSelectionChanged.connect(self._on_selection_changed)
+
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self._show_context_menu)
 
     def set_project(self, project: Project) -> None:
         """Rebuild the tree from a Project object."""
@@ -86,3 +91,30 @@ class DatasetTreeWidget(QTreeWidget):
             self.curve_selected.emit(item_id)
         elif item_type == "dataset":
             self.dataset_selected.emit(item_id)
+
+    def _show_context_menu(self, position) -> None:
+        item = self.itemAt(position)
+        if item is None:
+            return
+        
+        item_data = item.data(0, Qt.UserRole)
+        if not isinstance(item_data, dict):
+            return
+        
+        item_type = item_data.get("type")
+        dataset_id = item_data.get("id")
+        if item_type != "dataset" or not dataset_id:
+            return
+        
+        menu = QMenu(self)
+
+        rename_action = menu.addAction("Rename")
+        remove_action = menu.addAction("Remove")
+
+        selected_action = menu.exec_(self.viewport().mapToGlobal(position))
+
+        if selected_action == rename_action:
+            self.dataset_rename_requested.emit(dataset_id)
+
+        elif selected_action == remove_action:
+            self.dataset_remove_requested.emit(dataset_id)

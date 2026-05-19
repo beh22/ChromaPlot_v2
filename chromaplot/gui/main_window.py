@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
     QDockWidget,
     QFileDialog,
     QLabel,
+    QInputDialog,
     QMainWindow,
     QMessageBox,
     QStatusBar,
@@ -175,6 +176,9 @@ class MainWindow(QMainWindow):
         self.plot_canvas.preview_size_changed.connect(self.plot_settings_panel.set_current_preview_size)
 
         self.plot_settings_panel.use_preview_size_requested.connect(self.use_current_preview_size_for_export)
+
+        self.dataset_tree.dataset_rename_requested.connect(self.rename_dataset)
+        self.dataset_tree.dataset_remove_requested.connect(self.remove_dataset)
 
     def _build_status_bar(self) -> None:
         self.status_label = QLabel("")
@@ -419,6 +423,51 @@ class MainWindow(QMainWindow):
         self.project.plot_settings.ylim = ylim
 
         self.plot_settings_panel.set_plot_settings(self.project.plot_settings)
+        self.redraw_plot()
+        self.mark_dirty()
+
+    def rename_dataset(self, dataset_id: str) -> None:
+        dataset = self.project.get_dataset(dataset_id)
+        if dataset is None:
+            return
+
+        new_name, accepted = QInputDialog.getText(
+            self,
+            "Rename Dataset",
+            "New name:",
+            text=dataset.name
+        )
+        
+        if not accepted:
+            return
+        
+        new_name = new_name.strip()
+        if not new_name:
+            QMessageBox.warning(self, "Invalid name", "Dataset name cannot be empty.")
+            return
+        
+        dataset.name = new_name
+        self.dataset_tree.set_project(self.project)
+        self.mark_dirty()
+
+    def remove_dataset(self, dataset_id: str) -> None:
+        dataset = self.project.get_dataset(dataset_id)
+        if dataset is None:
+            return
+
+        response = QMessageBox.question(
+            self,
+            "Remove Dataset",
+            f"Remove dataset '{dataset.name}' from the project?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+
+        if response != QMessageBox.Yes:
+            return
+
+        self.project.remove_dataset(dataset_id)
+        self.dataset_tree.set_project(self.project)
         self.redraw_plot()
         self.mark_dirty()
 
