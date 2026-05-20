@@ -271,7 +271,7 @@ def apply_clean_plot_style(ax: Axes) -> None:
 def apply_xkcd_style(ax: Axes) -> None:
     for spine in ax.spines.values():
         spine.set_linewidth(1.5)
-        spine.set_sketch_params(scale=5, length=100, randomness=6)
+        spine.set_sketch_params(scale=1.5, length=100, randomness=6)
     for line in ax.xaxis.get_ticklines() + ax.yaxis.get_ticklines():
         line.set_markeredgewidth(1.5)
         line.set_sketch_params(scale=5, length=100, randomness=10)

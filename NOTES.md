@@ -10,14 +10,11 @@ integration, vertical marker, other analytical tools?
 give warning if it looks like the user is about to load the same dataset twice
 "it looks like dataset NAME is already loaded. are you sure you want to load it again?" or words to that effect
 
-add secondary axes, optional
+add secondary axis, optional
 
 
 fix figure sizes - should changing in plot settings affect window size? give option to export with size of current plot
 can we include window size and locations when saving project, so that they are loaded in the same way?
-
-
-open to welcome dialog with options to start by importing data or loading project - chance to show logo and small info, very similar to v1
 
 stylesheet
 
@@ -30,10 +27,18 @@ decide how to incorporate datasets other than akta - fida, lcms, sec-mals
 
 have settings panel only open once a datset is loaded, and not automatically be included in the main window?
 
-why is main window title: Untitled -- imported_dataset_name - Chromaplot?
-
 write proper readme!
+    quick description
+    improvements over version 1
+    list of things to be added
+    installation instructions
+
+and update readme of v1 to point to v2
 
 have menu within the app for 'file, view' etc.
 
 make changing window size require save?
+
+update checker?
+
+sort packaging

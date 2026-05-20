@@ -1,8 +1,3 @@
-# ============================================================
-# Update: chromaplot/gui/main_window.py
-# Replace the current splitter-based layout with this dock-widget version.
-# ============================================================
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,6 +17,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from chromaplot import __version__
+
 from chromaplot.core.importers import import_dataset
 from chromaplot.core.models import Project
 from chromaplot.core.project_io import load_project, save_project
@@ -37,14 +34,15 @@ from .dataset_settings_panel import DatasetSettingsPanel
 class MainWindow(QMainWindow):
     """Minimal ChromaPlot v2 main window using dock widgets."""
 
-    def __init__(self):
+    def __init__(self, show_empty: bool = True, version: str = __version__):
         super().__init__()
 
         self.project = Project(name="Untitled")
         self.project_path: Path | None = None
         self.is_dirty = False
 
-        self.setWindowTitle("ChromaPlot")
+        self.version = version
+        self.setWindowTitle(f"ChromaPlot {self.version}")
         self.resize(1200, 400)
 
         self.dataset_tree = DatasetTreeWidget()
@@ -223,10 +221,14 @@ class MainWindow(QMainWindow):
         self.update_window_title()
 
     def update_window_title(self) -> None:
-        project_name = self.project.name or "Untitled"
         dirty_marker = "*" if self.is_dirty else ""
-        path_text = f" — {self.project_path}" if self.project_path else ""
-        self.setWindowTitle(f"{project_name}{dirty_marker}{path_text} - ChromaPlot")
+
+        if self.project_path is not None:
+            display_name = self.project_path
+        else:
+            display_name = self.project.name or "Untitled"
+
+        self.setWindowTitle(f"{display_name}{dirty_marker} - ChromaPlot {self.version}")
 
     def update_status_summary(self) -> None:
         n_datasets = len(self.project.datasets)
@@ -290,6 +292,7 @@ class MainWindow(QMainWindow):
         try:
             self.project = load_project(path)
             self.project_path = Path(path)
+            self.project_name = self.project_path
             self.refresh_ui_from_project()
             self.mark_clean()
             self.statusBar().showMessage(f"Opened project: {path}", 5000)
@@ -321,9 +324,13 @@ class MainWindow(QMainWindow):
 
         try:
             save_project(self.project, path)
+
             self.project_path = Path(path)
             if self.project_path.suffix != ".chromaplot":
                 self.project_path = self.project_path.with_suffix(".chromaplot")
+
+            self.project_name = self.project_path
+
             self.mark_clean()
             self.statusBar().showMessage(f"Saved project: {self.project_path}", 5000)
             return True
@@ -482,6 +489,10 @@ class MainWindow(QMainWindow):
             return
 
         self.project.remove_dataset(dataset_id)
+        if not self.project.datasets:
+            self.project.name = "Untitled"
+            self.project_path = None
+
         self.curve_settings_panel.set_curve(None)
         self.dataset_settings_panel.set_dataset(None)
         self.dataset_tree.set_project(self.project)
