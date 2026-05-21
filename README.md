@@ -33,7 +33,7 @@ ChromaPlot v2 currently supports chromatography data exported from Cytiva ÄKTA 
   - `.csv`
   - `.asc`
 
-As far as we are aware, exports from all versions of UNICTORN are currently supported.
+As far as we are aware, exports from all versions of UNICORN are currently supported.
 
 If you encounter a file that does not import correctly, please open an issue on GitHub and include:
 - the Unicorn version (if known)
