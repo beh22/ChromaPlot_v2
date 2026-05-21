@@ -17,6 +17,7 @@ dependencies = [
     "numpy",
     "matplotlib",
     "PyQt5",
+    "packaging",
 ]
 
 [project.scripts]

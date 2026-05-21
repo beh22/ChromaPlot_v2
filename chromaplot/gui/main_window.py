@@ -470,6 +470,8 @@ class MainWindow(QMainWindow):
         
         dataset.name = new_name
         self.dataset_tree.set_project(self.project)
+        self.dataset_settings_panel.set_dataset(dataset)
+        self.redraw_plot()
         self.mark_dirty()
 
     def remove_dataset(self, dataset_id: str) -> None:
