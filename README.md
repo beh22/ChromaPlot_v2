@@ -24,11 +24,11 @@ ChromaPlot v2 is a complete rewrite of the original application with a much more
 
 ## Supported File Formats
 
-ChromaPlot v2 currently supports chromatography data exported from Cytiva ÄKTA systems using UNICORN software.
+ChromaPlot v2 currently supports chromatography data exported from Cytiva ÄKTA systems using  software.
 
 ### Currently Supported
 
-- Exported text-based chromatography files from Unicorn
+- Exported text-based chromatography files from UNICORN
   - `.txt`
   - `.csv`
   - `.asc`
@@ -36,7 +36,7 @@ ChromaPlot v2 currently supports chromatography data exported from Cytiva ÄKTA 
 As far as we are aware, exports from all versions of UNICORN are currently supported.
 
 If you encounter a file that does not import correctly, please open an issue on GitHub and include:
-- the Unicorn version (if known)
+- the UNICORN version (if known)
 - the export format used
 - a screenshot or example file if possible
 
