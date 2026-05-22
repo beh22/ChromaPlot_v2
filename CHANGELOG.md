@@ -1,6 +1,14 @@
 # Changelog
 
-## Version 2.0.0 - 2026-05-XX
+## Version 2.0.1 - 2026-05-22
+
+### Changed
+- Fixed update checker on Windows
+- Fixed fonts for Windows compatability
+- Improved dialog sizes for Windows compatability
+
+
+## Version 2.0.0 - 2026-05-21
 
 ### Added
 - Complete rewrite of ChromaPlot from the ground up

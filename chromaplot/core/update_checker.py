@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import ssl
+import certifi
 import urllib.request
 from dataclasses import dataclass
 
@@ -29,7 +31,8 @@ class UpdateInfo:
     changelog_text: str | None = None
 
 def fetch_text(url: str, timeout: int = 5) -> str:
-    with urllib.request.urlopen(url, timeout=timeout) as response:
+    context = ssl.create_default_context(cafile=certifi.where())
+    with urllib.request.urlopen(url, timeout=timeout, context=context) as response:
         return response.read().decode("utf-8")
     
 def extract_version(init_text: str) -> str:

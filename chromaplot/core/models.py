@@ -151,7 +151,7 @@ class PlotSettings:
     figure_width: float = 8.0
     figure_height: float = 5.0
     font_sizes: FontSettings = field(default_factory=FontSettings)
-    font_family: str = "Helvetica"
+    font_family: str = "Arial"
     tick_settings: TickSettings = field(default_factory=TickSettings)
     grid: bool = False
     clean_plot: bool = False
@@ -199,7 +199,7 @@ class PlotSettings:
             figure_width=float(data.get("figure_width", 8.0)),
             figure_height=float(data.get("figure_height", 5.0)),
             font_sizes=FontSettings.from_dict(data.get("font_sizes")),
-            font_family=str(data.get("font_family", "Helvetica")),
+            font_family=str(data.get("font_family", "Arial")),
             tick_settings=TickSettings.from_dict(data.get("tick_settings")),
             grid=bool(data.get("grid", False)),
             clean_plot=bool(data.get("clean_plot", False)),

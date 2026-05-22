@@ -43,7 +43,6 @@ class MainWindow(QMainWindow):
 
         self.version = version
         self.setWindowTitle(f"ChromaPlot {self.version}")
-        self.resize(1200, 400)
 
         self.dataset_tree = DatasetTreeWidget()
         self.dataset_tree.setMinimumWidth(240)

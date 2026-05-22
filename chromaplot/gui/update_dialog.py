@@ -3,7 +3,7 @@ from __future__ import annotations
 import webbrowser
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -16,6 +16,12 @@ from PyQt5.QtWidgets import (
 )
 
 from chromaplot.core.update_checker import UpdateInfo
+
+def set_font(widget, point_size: int, bold: bool = False) -> None:
+    font = widget.font()
+    font.setPointSize(point_size)
+    font.setBold(bold)
+    widget.setFont(font)
 
 def changelog_markdown_to_html(text: str) -> str:
     """Convert simple changelog markdown to HTML."""
@@ -90,9 +96,9 @@ class UpdateDialog(QDialog):
         self.update = update
 
         self.setWindowTitle("Update Available")
-        self.setFixedSize(560, 520)
 
         self._build_ui()
+        self.adjustSize()
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -101,7 +107,8 @@ class UpdateDialog(QDialog):
 
         title = QLabel("A new version of ChromaPlot is available")
         title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont("Helvetica", 24, QFont.Bold))
+        set_font(title, 20, bold=True)
+        title.setWordWrap(True)
         layout.addWidget(title)
 
         version_label = QLabel(
@@ -110,7 +117,8 @@ class UpdateDialog(QDialog):
         )
         version_label.setTextFormat(Qt.RichText)
         version_label.setAlignment(Qt.AlignCenter)
-        version_label.setFont(QFont("Helvetica", 16))
+        set_font(version_label, 13)
+        version_label.setWordWrap(True)
         layout.addWidget(version_label)
 
         separator = QFrame()
@@ -119,12 +127,34 @@ class UpdateDialog(QDialog):
         layout.addWidget(separator)
 
         changes_title = QLabel("What's new")
-        changes_title.setFont(QFont("Helvetica", 16, QFont.Bold))
+        set_font(changes_title, 14, bold=True)
         layout.addWidget(changes_title)
 
         self.changelog_box = QTextEdit()
+        self.changelog_box.setStyleSheet(
+            """
+            QTextEdit {
+                background-color: #2b2b2b;
+                color: #f0f0f0;
+                border: 1px solid #555555;
+                border-radius: 6px;
+                padding: 6px;
+            }
+
+            QScrollBar:vertical {
+                background: #3e3e3e;
+                width: 10px;
+            }
+
+            QScrollBar::handle:vertical {
+                background: #666666;
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            """
+        )
         self.changelog_box.setReadOnly(True)
-        self.changelog_box.setMinimumHeight(150)
+        self.changelog_box.setMinimumHeight(180)
         if self.update.changelog_text:
             changelog_html = changelog_markdown_to_html(
                 self.update.changelog_text
@@ -138,22 +168,48 @@ class UpdateDialog(QDialog):
         layout.addWidget(self.changelog_box)
 
         source_title = QLabel("Updating from source")
-        source_title.setFont(QFont("Helvetica", 16, QFont.Bold))
+        set_font(source_title, 14, bold=True)
         layout.addWidget(source_title)
 
         source_text = QLabel("If you installed ChromaPlot from source, update with:")
-        source_text.setFont(QFont("Helvetica", 14))
+        set_font(source_text, 12)
+        source_text.setWordWrap(True)
         layout.addWidget(source_text)
 
         self.command_box = QPlainTextEdit()
+        self.command_box.setStyleSheet(
+            """
+            QPlainTextEdit {
+                background-color: #2b2b2b;
+                color: #f0f0f0;
+                border: 1px solid #555555;
+                border-radius: 6px;
+                padding: 6px;
+                selection-background-color: #666666;
+            }
+
+            QScrollBar:vertical {
+                background: #3e3e3e;
+                width: 10px;
+            }
+
+            QScrollBar::handle:vertical {
+                background: #666666;
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            """
+        )
         self.command_box.setReadOnly(True)
-        self.command_box.setFixedHeight(55)
+        self.command_box.setFixedHeight(120)
         self.command_box.setPlainText(
             "cd ChromaPlot_v2\n"
             "git pull\n"
             "pip install ."
         )
-        self.command_box.setFont(QFont("Menlo", 11))
+        command_font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
+        command_font.setPointSize(11)
+        self.command_box.setFont(command_font)
         layout.addWidget(self.command_box)
 
         package_text = QLabel(
@@ -161,7 +217,8 @@ class UpdateDialog(QDialog):
             "download the latest version from the GitHub releases page."
         )
         package_text.setWordWrap(True)
-        package_text.setFont(QFont("Helvetica", 14))
+        set_font(package_text, 12)
+        package_text.setWordWrap(True)
         layout.addWidget(package_text)
 
         button_layout = QHBoxLayout()
