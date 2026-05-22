@@ -1,8 +1,7 @@
 # <img src="chromaplot/resources/cp_logo.png" alt="ChromaPlot logo" width="400" />
 
-# ChromaPlot v2
 
-**ChromaPlot** is a Python-based desktop application for creating high-quality chromatography figures from exported instrument data.
+**ChromaPlot v2** is a Python-based desktop application for creating high-quality chromatography figures from exported instrument data.
 
 [Originally developed](https://github.com/beh22/ChromaPlot) for Cytiva ÄKTA chromatography systems, ChromaPlot v2 introduces a completely redesigned project-based workflow focused on flexibility, reproducibility, and publication-quality figure generation.
 
@@ -24,7 +23,7 @@ ChromaPlot v2 is a complete rewrite of the original application with a much more
 
 ## Supported File Formats
 
-ChromaPlot v2 currently supports chromatography data exported from Cytiva ÄKTA systems using  software.
+ChromaPlot v2 currently supports chromatography data exported from Cytiva ÄKTA systems using UNICORN software.
 
 ### Currently Supported
 
@@ -57,17 +56,79 @@ The following features are planned for future releases:
 - Update checker
 - Additional analysis tools
 
-## Installation
+<br>
 
-At the moment, ChromaPlot v2 is intended to be run from source code. 
+# Installation
+
+At the moment, ChromaPlot is distributed as a Python application. 
 
 Packaged standalone applications for Windows and macOS will be introduced soon.
 
-### Requirements
+## Requirements
 
 - Python 3.11 or newer
-- Git (recommended for cloning the repository)
+- Git
 
+Optional but recommended:
+
+- pipx
+
+## Recommended Installation (pipx)
+
+The recommended way to install ChromaPlot is with `pipx`.
+
+`pipx` installs ChromaPlot into an isolated environment while making the `chromaplot` command globally available, so you do not need to manually activate a virtual environment each time you launch the application.
+
+### 1. Install `pipx`
+
+#### macOS
+
+Using [Homebrew](https://brew.sh/):
+
+```bash
+brew install pipx
+pipx ensurepath
+```
+
+#### Windows
+
+```powershell
+py -m pip install --user pipx
+py -m pipx ensurepath
+```
+
+You may need to restart the terminal after running `ensurepath`.
+
+See [here](https://pipx.pypa.io/stable/how-to/install-pipx/) for Linux installation or if you have problems installing `pipx`.
+
+### 2. Install ChromaPlot
+
+```bash
+pipx install git+https://github.com/beh22/ChromaPlot_v2.git
+```
+
+### 3. Launch ChromaPlot
+
+```bash
+chromaplot
+```
+
+You can now launch ChromaPlot directly from the terminal without activating any environment.
+
+
+## Updating ChromaPlot (pipx)
+
+To update to the latest version:
+
+```bash
+pipx upgrade chromaplot
+```
+
+## Development / Source Installation
+
+If you want to run ChromaPlot directly from source code or contribute to development, you can install it manually.
+
+It is recommended to do this inside a dedicated Python virtual environment to avoid dependency conflicts.
 
 ### 1. Clone the Repository
 
@@ -76,11 +137,9 @@ git clone https://github.com/beh22/ChromaPlot_v2.git
 cd ChromaPlot_v2
 ```
 
-### 2. Create a Virtual Environment (Recommended)
+### 2. Create a Virtual Environment
 
-It is recommended to install ChromaPlot inside a dedicated Python virtual environment to avoid dependency conflicts.
-
-### Option A — Standard Python `venv`
+#### Option A — Standard Python `venv`
 
 Create the environment:
 
@@ -90,28 +149,24 @@ python -m venv chromaplot_env
 
 Activate it:
 
-#### macOS / Linux
+For macOS / Linux:
 
 ```bash
 source chromaplot_env/bin/activate
 ```
 
-#### Windows
+For Windows:
 
 ```bash
 chromaplot_env\Scripts\activate
 ```
 
-
-### Option B — Conda Environment
-
-If you already use Anaconda or Miniconda:
+#### Option B — Conda Environment
 
 ```bash
 conda create -n chromaplot python=3.12
 conda activate chromaplot
 ```
-
 
 ### 3. Install ChromaPlot
 
@@ -123,53 +178,22 @@ pip install .
 
 ### 4. Launch ChromaPlot
 
-Once installed, start the application with:
-
 ```bash
 chromaplot
 ```
 
-## Updating ChromaPlot
+## Updating a Source Installation
 
-To update to the latest version, run the following commands from the `ChromaPlot_v2` directory:
+From inside the repository directory:
 
 ```bash
 git pull
 pip install .
 ```
 
-If you are using a virtual environment, make sure it is activated before running the commands above.
+If you are using a virtual environment, ensure it is activated before running the commands above.
 
-
-## Troubleshooting
-
-### `chromaplot: command not found`
-
-Make sure:
-
-- your virtual environment is activated
-- the installation completed successfully
-- you installed using:
-
-```bash
-pip install .
-```
-
-
-### PyQt / GUI Issues
-
-If the GUI does not launch correctly:
-
-- ensure you are using a supported Python version
-- try creating a fresh virtual environment
-- ensure PyQt5 installed successfully
-
-You can verify installation with:
-
-```bash
-pip show PyQt5
-```
-
+<br>
 
 ## Project Status
 
