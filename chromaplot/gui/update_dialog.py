@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import webbrowser
+import sys
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFontDatabase
@@ -13,6 +14,8 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QPlainTextEdit,
     QFrame,
+    QScrollArea,
+    QWidget,
 )
 
 from chromaplot.core.update_checker import UpdateInfo
@@ -94,15 +97,108 @@ class UpdateDialog(QDialog):
         super().__init__(parent)
 
         self.update = update
-
         self.setWindowTitle("Update Available")
 
         self._build_ui()
-        self.adjustSize()
+
+        if sys.platform.startswith("win"):
+            self.resize(800, 1000)
+        else:
+            self.resize(400, 720)
+
+    def _make_command_box(self, text: str, height: int = 80) -> QPlainTextEdit:
+        box = QPlainTextEdit()
+        box.setReadOnly(True)
+        box.setFixedHeight(height)
+        box.setPlainText(text)
+
+        command_font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
+        command_font.setPointSize(11)
+        box.setFont(command_font)
+
+        box.setStyleSheet(
+            """
+            QPlainTextEdit {
+                background-color: #2b2b2b;
+                color: #f0f0f0;
+                border: 1px solid #555555;
+                border-radius: 6px;
+                padding: 6px;
+                selection-background-color: #666666;
+            }
+
+            QScrollBar:vertical {
+                background: #3e3e3e;
+                width: 10px;
+            }
+
+            QScrollBar::handle:vertical {
+                background: #666666;
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            """
+        )
+
+        return box
 
     def _build_ui(self) -> None:
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(22, 18, 22, 18)
+        outer_layout = QVBoxLayout(self)
+        outer_layout.setContentsMargins(22, 18, 22, 18)
+        outer_layout.setSpacing(12)
+
+        self.setStyleSheet(
+            """
+            QDialog {
+                background-color: #3e3e3e;
+            }
+
+            QWidget#scrollContent {
+                background-color: #3e3e3e;
+            }
+
+            QScrollArea {
+                border: none;
+                background-color: #3e3e3e;
+            }
+
+            QScrollArea > QWidget > QWidget {
+                background-color: #3e3e3e;
+            }
+
+            QLabel {
+                color: #f0f0f0;
+            }
+
+            QPushButton {
+                background-color: #5a5a5a;
+                color: #f0f0f0;
+                border: 1px solid #777777;
+                border-radius: 6px;
+                padding: 6px 12px;
+            }
+
+            QPushButton:hover {
+                background-color: #6a6a6a;
+            }
+
+            QPushButton:pressed {
+                background-color: #4a4a4a;
+            }
+            """
+        )
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        outer_layout.addWidget(scroll)
+
+        content = QWidget()
+        content.setObjectName("scrollContent")
+        scroll.setWidget(content)
+
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
 
         title = QLabel("A new version of ChromaPlot is available")
@@ -131,6 +227,8 @@ class UpdateDialog(QDialog):
         layout.addWidget(changes_title)
 
         self.changelog_box = QTextEdit()
+        self.changelog_box.setReadOnly(True)
+        self.changelog_box.setFixedHeight(170)
         self.changelog_box.setStyleSheet(
             """
             QTextEdit {
@@ -153,8 +251,7 @@ class UpdateDialog(QDialog):
             }
             """
         )
-        self.changelog_box.setReadOnly(True)
-        self.changelog_box.setMinimumHeight(180)
+
         if self.update.changelog_text:
             changelog_html = changelog_markdown_to_html(
                 self.update.changelog_text
@@ -167,59 +264,39 @@ class UpdateDialog(QDialog):
         self.changelog_box.setHtml(changelog_html)
         layout.addWidget(self.changelog_box)
 
-        source_title = QLabel("Updating from source")
+        source_title = QLabel("To update:")
         set_font(source_title, 14, bold=True)
         layout.addWidget(source_title)
 
-        source_text = QLabel("If you installed ChromaPlot from source, update with:")
+        pipx_text = QLabel(
+            "If you installed ChromaPlot with pipx, update with:"
+        )
+        set_font(pipx_text, 12)
+        pipx_text.setWordWrap(True)
+        layout.addWidget(pipx_text)
+
+        self.pipx_github_command_box = self._make_command_box(
+            "pipx upgrade chromaplot",
+            height=60,
+        )
+        layout.addWidget(self.pipx_github_command_box)
+
+        source_text = QLabel(
+            "If you installed ChromaPlot from source, update with:"
+        )
         set_font(source_text, 12)
         source_text.setWordWrap(True)
         layout.addWidget(source_text)
 
-        self.command_box = QPlainTextEdit()
-        self.command_box.setStyleSheet(
-            """
-            QPlainTextEdit {
-                background-color: #2b2b2b;
-                color: #f0f0f0;
-                border: 1px solid #555555;
-                border-radius: 6px;
-                padding: 6px;
-                selection-background-color: #666666;
-            }
-
-            QScrollBar:vertical {
-                background: #3e3e3e;
-                width: 10px;
-            }
-
-            QScrollBar::handle:vertical {
-                background: #666666;
-                border-radius: 4px;
-                min-height: 20px;
-            }
-            """
-        )
-        self.command_box.setReadOnly(True)
-        self.command_box.setFixedHeight(120)
-        self.command_box.setPlainText(
+        self.source_command_box = self._make_command_box(
             "cd ChromaPlot_v2\n"
             "git pull\n"
-            "pip install ."
+            "pip install .",
+            height=120,
         )
-        command_font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
-        command_font.setPointSize(11)
-        self.command_box.setFont(command_font)
-        layout.addWidget(self.command_box)
+        layout.addWidget(self.source_command_box)
 
-        package_text = QLabel(
-            "If you are using a packaged version of ChromaPlot, "
-            "download the latest version from the GitHub releases page."
-        )
-        package_text.setWordWrap(True)
-        set_font(package_text, 12)
-        package_text.setWordWrap(True)
-        layout.addWidget(package_text)
+        layout.addStretch()
 
         button_layout = QHBoxLayout()
 
@@ -233,7 +310,7 @@ class UpdateDialog(QDialog):
         self.open_releases_button.clicked.connect(self._open_releases)
         button_layout.addWidget(self.open_releases_button)
 
-        layout.addLayout(button_layout)
+        outer_layout.addLayout(button_layout)
 
     def _open_releases(self) -> None:
         webbrowser.open(self.update.release_url)

@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 2.0.2 - 2026-06-26
+
+### Changed
+- Changed update dialog text to include `pipx` upgrade instructions
+- Improved update dialog on Windows
+
 ## Version 2.0.1 - 2026-05-22
 
 ### Changed

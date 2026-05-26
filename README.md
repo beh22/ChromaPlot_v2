@@ -104,7 +104,7 @@ See [here](https://pipx.pypa.io/stable/how-to/install-pipx/) for Linux installat
 ### 2. Install ChromaPlot
 
 ```bash
-pipx install git+https://github.com/beh22/ChromaPlot_v2.git
+pipx install chromaplot
 ```
 
 ### 3. Launch ChromaPlot
