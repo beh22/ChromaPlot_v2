@@ -1,4 +1,4 @@
-# <img src="chromaplot/resources/cp_logo.png" alt="ChromaPlot logo" width="400" />
+# <img src="https://raw.githubusercontent.com/beh22/ChromaPlot_v2/main/chromaplot/resources/cp_logo.png" alt="ChromaPlot logo" width="400" />
 
 
 **ChromaPlot v2** is a Python-based desktop application for creating high-quality chromatography figures from exported instrument data.
