@@ -69,6 +69,9 @@ def plot_project(
             autoscale_limits=autoscale_visible_curves(project) if autoscale_if_no_limits else None,
         )
 
+        for dataset in project.datasets:
+            plot_dataset_fractions(ax, dataset)
+
     # fig.tight_layout(rect=[0, 0, 1, 0.95])
     fig.tight_layout()
     return fig, ax
@@ -96,6 +99,73 @@ def plot_curve(ax: Axes, curve: Curve, label: str | None = None) -> None:
         markersize=style.markersize,
         zorder=style.zorder,
     )
+
+
+def plot_dataset_fractions(ax: Axes, dataset: Dataset) -> None:
+    settings = dataset.fraction_label_settings
+
+    if not settings.visible or not dataset.fractions:
+        return
+    
+    if settings.hide_when_dataset_hidden and not dataset.visible_curves():
+        return
+
+    ymin, ymax = ax.get_ylim()
+    height = ymax - ymin
+    line_top = ymin + height * settings.line_height_fraction
+    label_y = ymin + height * (settings.line_height_fraction * settings.label_height_fraction)
+
+    visible_fractions = [
+        fraction for fraction in dataset.fractions
+        if not (settings.hide_waste and fraction.kind == "waste")
+    ]
+
+    if settings.hide_first_fraction and visible_fractions:
+        visible_fractions = visible_fractions[1:]
+
+    for i, fraction in enumerate(visible_fractions, start=1):
+        x_start = fraction.start_volume
+
+        if fraction.end_volume is not None:
+            x_label = (fraction.start_volume + fraction.end_volume) / 2
+        elif i < len(visible_fractions):
+            x_label = (fraction.start_volume + visible_fractions[i].start_volume) / 2
+        else:
+            x_label = fraction.start_volume
+
+        x_boundary = x_start
+
+        if settings.show_boundaries:
+            ax.vlines(
+                x_boundary,
+                ymin,
+                line_top,
+                color=settings.line_color,
+                linestyle=settings.line_style,
+                linewidth=settings.line_width,
+                alpha=settings.line_alpha,
+                zorder=1,
+            )
+
+        if settings.show_labels:
+            if settings.label_mode == "sequential":
+                label = str(i)
+            else:
+                label = fraction.display_label or fraction.label
+
+            ax.text(
+                x_label,
+                label_y,
+                label,
+                fontsize=settings.label_font_size,
+                rotation=settings.label_rotation,
+                ha="center",
+                va="center",
+                color=settings.label_color,
+                alpha=settings.label_alpha,
+                clip_on=True,
+                zorder=2,
+            )
 
 
 # -----------------------------------------------------------------------------

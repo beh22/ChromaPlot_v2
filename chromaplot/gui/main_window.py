@@ -29,6 +29,7 @@ from .plot_canvas import PlotCanvas
 from .curve_settings_panel import CurveSettingsPanel
 from .plot_settings_panel import PlotSettingsPanel
 from .dataset_settings_panel import DatasetSettingsPanel
+from .fraction_settings_dialog import FractionSettingsDialog
 
 
 class MainWindow(QMainWindow):
@@ -184,6 +185,8 @@ class MainWindow(QMainWindow):
         self.dataset_settings_panel.dataset_remove_requested.connect(self.remove_dataset)
         self.dataset_settings_panel.show_all_curves_requested.connect(self.show_all_dataset_curves)
         self.dataset_settings_panel.hide_all_curves_requested.connect(self.hide_all_dataset_curves)
+
+        self.dataset_settings_panel.configure_fractions_requested.connect(self.configure_dataset_fractions)
 
     def _build_status_bar(self) -> None:
         self.status_label = QLabel("")
@@ -534,6 +537,19 @@ class MainWindow(QMainWindow):
         self.dataset_tree.set_project(self.project)
         self.redraw_plot()
         self.mark_dirty()
+
+    def configure_dataset_fractions(self, dataset_id: str) -> None:
+        dataset = self.project.get_dataset(dataset_id)
+        if dataset is None:
+            return
+
+        dialog = FractionSettingsDialog(dataset, self)
+
+        if dialog.exec():
+            self.dataset_settings_panel.set_dataset(dataset)
+            # self.dataset_tree.set_project(self.project)
+            self.redraw_plot()
+            self.mark_dirty()
 
 
     # ------------------------------------------------------------------

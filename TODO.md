@@ -1,5 +1,9 @@
 # ChromaPlot v2 TODO
 
+- get cmd+w to work for closing windows? other keyboard shortcuts?
+- fix 'visible' button in curve tab to sync with box in dataset tree
+- if a curve is selected and then the dataset button is clicked, the dataset that the curve is in should be selected
+- fix dataset tree refresh, re-expands
 
 ## GUI and UX Improvements
 

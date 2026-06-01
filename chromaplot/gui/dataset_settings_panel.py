@@ -13,6 +13,10 @@ from PyQt5.QtWidgets import (
     QLabel,
     QGroupBox,
     QScrollArea,
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
+    QSpinBox,
 )
 
 from chromaplot.core.models import Dataset
@@ -24,6 +28,7 @@ class DatasetSettingsPanel(QWidget):
     dataset_remove_requested = pyqtSignal(str)
     show_all_curves_requested = pyqtSignal(str)
     hide_all_curves_requested = pyqtSignal(str)
+    configure_fractions_requested = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -91,6 +96,36 @@ class DatasetSettingsPanel(QWidget):
 
         main_layout.addWidget(self.actions_group)
 
+        self.fractions_group = QGroupBox("Fraction labels")
+        fractions_layout = QFormLayout(self.fractions_group)
+
+        self.show_fractions_check = QCheckBox("Show fraction labels")
+        fractions_layout.addRow(self.show_fractions_check)
+
+        self.fraction_label_mode_combo = QComboBox()
+        self.fraction_label_mode_combo.addItems(["original", "sequential"])
+        fractions_layout.addRow("Labels", self.fraction_label_mode_combo)
+
+        self.hide_waste_check = QCheckBox("Hide waste fractions")
+        fractions_layout.addRow(self.hide_waste_check)
+
+        self.hide_first_fraction_check = QCheckBox("Hide first fraction")
+        fractions_layout.addRow(self.hide_first_fraction_check)
+
+        self.fraction_line_height_spin = QDoubleSpinBox()
+        self.fraction_line_height_spin.setRange(0.01, 1.0)
+        self.fraction_line_height_spin.setSingleStep(0.01)
+        fractions_layout.addRow("Line height", self.fraction_line_height_spin)
+
+        self.fraction_font_size_spin = QSpinBox()
+        self.fraction_font_size_spin.setRange(4, 40)
+        fractions_layout.addRow("Font size", self.fraction_font_size_spin)
+
+        self.configure_fractions_button = QPushButton("Configure fractions...")
+        fractions_layout.addRow(self.configure_fractions_button)
+
+        main_layout.addWidget(self.fractions_group)
+
         self.notes_group = QGroupBox("Notes")
         notes_layout = QVBoxLayout(self.notes_group)
 
@@ -113,6 +148,14 @@ class DatasetSettingsPanel(QWidget):
         self.hide_all_button.clicked.connect(self._request_hide_all)
         self.remove_dataset_button.clicked.connect(self._request_remove_dataset)
 
+        self.show_fractions_check.toggled.connect(self._apply_fraction_settings)
+        self.fraction_label_mode_combo.currentTextChanged.connect(self._apply_fraction_settings)
+        self.hide_waste_check.toggled.connect(self._apply_fraction_settings)
+        self.hide_first_fraction_check.toggled.connect(self._apply_fraction_settings)
+        self.fraction_line_height_spin.valueChanged.connect(self._apply_fraction_settings)
+        self.fraction_font_size_spin.valueChanged.connect(self._apply_fraction_settings)
+        self.configure_fractions_button.clicked.connect(self._request_configure_fractions)
+        
     def set_dataset(self, dataset: Dataset | None) -> None:
         self.dataset = dataset
         self._updating = True
@@ -132,6 +175,7 @@ class DatasetSettingsPanel(QWidget):
             self.curve_count_label.setText("-")
             self.visible_curve_count_label.setText("-")
             self.notes_edit.setPlainText("")
+            self.fractions_group.setEnabled(False)
             self._updating = False
             return
 
@@ -151,6 +195,17 @@ class DatasetSettingsPanel(QWidget):
         self.visible_curve_count_label.setText(str(n_visible))
 
         self.notes_edit.setPlainText(str(dataset.metadata.get("notes", "")))
+
+        self.fractions_group.setEnabled(enabled and bool(dataset and dataset.fractions))
+
+        settings = dataset.fraction_label_settings
+
+        self.show_fractions_check.setChecked(settings.visible)
+        self.fraction_label_mode_combo.setCurrentText(settings.label_mode)
+        self.hide_waste_check.setChecked(settings.hide_waste)
+        self.hide_first_fraction_check.setChecked(settings.hide_first_fraction)
+        self.fraction_line_height_spin.setValue(settings.line_height_fraction)
+        self.fraction_font_size_spin.setValue(settings.label_font_size)
 
         self._updating = False
 
@@ -185,3 +240,22 @@ class DatasetSettingsPanel(QWidget):
     def _request_remove_dataset(self) -> None:
         if self.dataset is not None:
             self.dataset_remove_requested.emit(self.dataset.id)
+
+    def _apply_fraction_settings(self) -> None:
+        if self._updating or self.dataset is None:
+            return
+
+        settings = self.dataset.fraction_label_settings
+
+        settings.visible = self.show_fractions_check.isChecked()
+        settings.label_mode = self.fraction_label_mode_combo.currentText()
+        settings.hide_waste = self.hide_waste_check.isChecked()
+        settings.hide_first_fraction = self.hide_first_fraction_check.isChecked()
+        settings.line_height_fraction = self.fraction_line_height_spin.value()
+        settings.label_font_size = self.fraction_font_size_spin.value()
+
+        self.dataset_changed.emit(self.dataset.id)
+
+    def _request_configure_fractions(self) -> None:
+        if self.dataset is not None:
+            self.configure_fractions_requested.emit(self.dataset.id)

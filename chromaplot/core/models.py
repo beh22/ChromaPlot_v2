@@ -209,7 +209,84 @@ class PlotSettings:
             legend_label_mode=str(data.get("legend_label_mode", "auto")),
             plot_xkcd=bool(data.get("plot_xkcd", False)),
         )
+
+
+# -----------------------------
+# Fractions
+# -----------------------------
+
+@dataclass
+class Fraction:
+    start_volume: float
+    end_volume: float | None = None
+    label: str = ""
+    display_label: str | None = None
+    kind: str = "fraction" # fraction, waste, unknown etc.
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
     
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Fraction":
+        return cls(
+            start_volume=float(data.get("start_volume", 0.0)),
+            end_volume=data.get("end_volume"),
+            label=str(data.get("label", "")),
+            display_label=data.get("display_label"),
+            kind=str(data.get("kind", "fraction")),
+        )
+    
+
+@dataclass
+class FractionLabelSettings:
+    visible: bool = False
+    show_boundaries: bool = True
+    show_labels: bool = True
+
+    label_mode: str = "original"  # "original", "sequential"
+    hide_waste: bool = True
+    hide_first_fraction: bool = False
+
+    line_color: str = "#666666"
+    line_style: str = "--"
+    line_width: float = 0.8
+    line_alpha: float = 0.8
+    line_height_fraction: float = 0.12
+
+    label_color: str = "#666666"
+    label_alpha: float = 0.8
+    label_height_fraction: float = 0.5
+    hide_when_dataset_hidden: bool = True
+    label_font_size: int = 8
+    label_rotation: float = 0.0
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any] | None) -> "FractionLabelSettings":
+        if data is None:
+            return cls()
+
+        return cls(
+            visible=bool(data.get("visible", False)),
+            show_boundaries=bool(data.get("show_boundaries", True)),
+            show_labels=bool(data.get("show_labels", True)),
+            label_mode=str(data.get("label_mode", "original")),
+            hide_waste=bool(data.get("hide_waste", True)),
+            hide_first_fraction=bool(data.get("hide_first_fraction", False)),
+            line_color=str(data.get("line_color", "#666666")),
+            line_style=str(data.get("line_style", "--")),
+            line_width=float(data.get("line_width", 0.8)),
+            line_alpha=float(data.get("line_alpha", 0.8)),
+            line_height_fraction=float(data.get("line_height_fraction", 0.12)),
+            label_color=str(data.get("label_color", "#666666")),
+            label_alpha=float(data.get("label_alpha", 0.8)),
+            label_height_fraction=float(data.get("label_height_fraction", 0.5)),
+            hide_when_dataset_hidden=bool(data.get("hide_when_dataset_hidden", True)),
+            label_font_size=int(data.get("label_font_size", 8)),
+            label_rotation=float(data.get("label_rotation", 0.0)),
+        )
 
 # -----------------------------
 # Curves and datasets
@@ -308,6 +385,8 @@ class Dataset:
     id: str = field(default_factory=lambda: new_id("dataset"))
     source: DataSource | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    fractions: list[Fraction] = field(default_factory=list)
+    fraction_label_settings: FractionLabelSettings = field(default_factory=FractionLabelSettings)
 
     def add_curve(self, curve: Curve) -> None:
         self.curves.append(curve)
@@ -336,6 +415,8 @@ class Dataset:
             "source": self.source.to_dict() if self.source is not None else None,
             "metadata": self.metadata,
             "curves": [curve.to_dict() for curve in self.curves],
+            "fractions": [fraction.to_dict() for fraction in self.fractions],
+            "fraction_label_settings": self.fraction_label_settings.to_dict(),
         }
 
     @classmethod
@@ -346,6 +427,8 @@ class Dataset:
             source=DataSource.from_dict(data.get("source")),
             metadata=dict(data.get("metadata", {})),
             curves=[Curve.from_dict(curve_data) for curve_data in data.get("curves", [])],
+            fractions=[Fraction.from_dict(fraction_data) for fraction_data in data.get("fractions", [])],
+            fraction_label_settings=FractionLabelSettings.from_dict(data.get("fraction_label_settings")),
         )
 
 

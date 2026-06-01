@@ -7,8 +7,9 @@ from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
 from typing import Any
+import numpy as np
 
-from .models import Curve, DataSource, Dataset, now_iso
+from .models import Curve, DataSource, Dataset, Fraction, now_iso
 from .styles import CurveStyle, default_curve_style
 
 
@@ -561,6 +562,62 @@ def _is_numeric_sequence(values: list[Any]) -> bool:
     return all(isinstance(value, (int, float)) for value in values)
 
 
+def clean_fraction_label(value: Any) -> str:
+    if value is None:
+        return ""
+    
+    if isinstance(value, float) and np.isnan(value):
+        return ""
+    
+    if isinstance(value, (int, float)):
+        if float(value).is_integer():
+            return str(int(value))
+        return str(value)
+    
+    label = str(value).strip()
+    label = label.strip('"').strip("'").strip()
+    label = label.removeprefix("T")
+    return label.strip()
+
+
+def _is_waste_label(label: str) -> bool:
+    text = label.strip().lower()
+    return "waste" in text or text in {"w", "waste"}
+
+
+def extract_fractions_from_column(
+        x_values: list[Any],
+        y_values: list[Any],
+) -> list[Fraction]:
+    fractions: list[Fraction] = []
+
+    for x, y in zip(x_values, y_values):
+        if not isinstance(x, (int, float)):
+            continue
+        if y is None:
+            continue
+
+        raw_label = str(y).strip()
+        display_label = clean_fraction_label(y)
+
+        if not display_label:
+            continue
+
+        fractions.append(
+            Fraction(
+                start_volume=float(x),
+                label=raw_label,
+                display_label=display_label,
+                kind="waste" if _is_waste_label(raw_label) else "fraction",
+            )
+        )
+
+    for i, fraction in enumerate(fractions[:-1]):
+        fraction.end_volume = fractions[i + 1].start_volume
+
+    return fractions
+
+
 def akta_to_dataset(raw: AktaRawData, dataset_name: str | None = None) -> Dataset:
     """
     Convert parsed AKTA raw data into a generic ChromaPlot Dataset.
@@ -610,6 +667,10 @@ def akta_to_dataset(raw: AktaRawData, dataset_name: str | None = None) -> Datase
                 "uv_channel": uv_channel,
                 "uv_wavelength": uv_wavelength,
             }
+
+            if curve_type == "text" and "fraction" in curve_name.lower():
+                dataset.fractions = extract_fractions_from_column(x_values, y_values)
+
             continue
 
         min_len = min(len(x_values), len(y_values))
