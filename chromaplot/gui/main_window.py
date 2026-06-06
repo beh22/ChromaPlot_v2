@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import (
     QAction,
     QDockWidget,
@@ -153,16 +154,29 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
+        self.close_window_action = QAction("Close Window", self)
+        self.close_window_action.setShortcuts(QKeySequence.Close)
+        self.close_window_action.triggered.connect(self.close)
+        file_menu.addAction(self.close_window_action)
+
         self.quit_action = QAction("Quit", self)
-        self.quit_action.setShortcut("Ctrl+Q")
+        self.quit_action.setShortcuts(QKeySequence.Quit)
         self.quit_action.triggered.connect(self.close)
         file_menu.addAction(self.quit_action)
 
     def _build_view_menu(self) -> None:
         """Add menu actions for showing/hiding docks."""
         view_menu = self.menuBar().addMenu("View")
-        view_menu.addAction(self.dataset_dock.toggleViewAction())
-        view_menu.addAction(self.curve_settings_dock.toggleViewAction())
+
+        self.toggle_dataset_dock_action = self.dataset_dock.toggleViewAction()
+        self.toggle_dataset_dock_action.setText("Datasets && Curves")
+        self.toggle_dataset_dock_action.setShortcut("Ctrl+1")
+        view_menu.addAction(self.toggle_dataset_dock_action)
+
+        self.toggle_settings_dock_action = self.curve_settings_dock.toggleViewAction()
+        self.toggle_settings_dock_action.setText("Settings")
+        self.toggle_settings_dock_action.setShortcut("Ctrl+2")
+        view_menu.addAction(self.toggle_settings_dock_action)
 
     def _connect_signals(self) -> None:
         self.dataset_tree.curve_visibility_changed.connect(self.set_curve_visibility)

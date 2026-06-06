@@ -4,6 +4,7 @@
 
 ### Added
 - Added ability to plot fractions and customise their appearance
+- Added keyboard shortcuts in main and welcome windows
 
 
 ## Version 2.0.2 - 2026-05-26

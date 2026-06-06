@@ -4,14 +4,16 @@ import sys
 from pathlib import Path
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QKeySequence
 from PyQt5.QtWidgets import (
+    QAction,
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
     QFrame,
+    QMenuBar,
 )
 
 from chromaplot import __version__
@@ -65,10 +67,15 @@ class WelcomeDialog(QDialog):
         )
 
         self._build_ui()
+        self._build_menu_bar()
         self.adjustSize()
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
+
+        self.menu_bar = QMenuBar()
+        layout.setMenuBar(self.menu_bar)
+
         layout.setContentsMargins(20, 10, 20, 10)
         # layout.setSpacing(10)
 
@@ -189,3 +196,30 @@ class WelcomeDialog(QDialog):
             return str(Path(sys._MEIPASS) / filename)
 
         return str(Path(__file__).resolve().parent.parent / "resources" / filename)
+
+    def _build_menu_bar(self) -> None:
+        """Create menu bar and keyboard shortcuts."""
+
+        file_menu = self.menu_bar.addMenu("File")
+
+        self.import_action = QAction("Import Data", self)
+        self.import_action.setShortcut("Ctrl+I")
+        self.import_action.triggered.connect(self._on_import_clicked)
+        file_menu.addAction(self.import_action)
+
+        self.open_action = QAction("Open Project", self)
+        self.open_action.setShortcuts(QKeySequence.Open)
+        self.open_action.triggered.connect(self._on_open_clicked)
+        file_menu.addAction(self.open_action)
+
+        file_menu.addSeparator()
+
+        self.close_action = QAction("Close Window", self)
+        self.close_action.setShortcuts(QKeySequence.Close)
+        self.close_action.triggered.connect(self.reject)
+        file_menu.addAction(self.close_action)
+
+        self.quit_action = QAction("Quit", self)
+        self.quit_action.setShortcuts(QKeySequence.Quit)
+        self.quit_action.triggered.connect(self.reject)
+        file_menu.addAction(self.quit_action)
