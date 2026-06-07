@@ -9,7 +9,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.ticker import MultipleLocator
 
-from .models import Curve, Dataset, Project, PlotSettings
+from .models import Annotation, Curve, Dataset, Project, PlotSettings
 
 
 LegendLabelMode = Literal["auto", "curve", "dataset", "dataset_curve"]
@@ -68,6 +68,8 @@ def plot_project(
             has_visible_curves=bool(visible_items),
             autoscale_limits=autoscale_visible_curves(project) if autoscale_if_no_limits else None,
         )
+
+        plot_annotations(ax, project)
 
         for dataset in project.datasets:
             plot_dataset_fractions(ax, dataset)
@@ -417,3 +419,55 @@ def _get_figure_and_axis(settings: PlotSettings, ax: Axes | None = None) -> tupl
     fig, ax = plt.subplots(figsize=(settings.figure_width, settings.figure_height))
     return fig, ax
 
+
+# -----------------------------------------------------------------------------
+# Annotations
+# -----------------------------------------------------------------------------
+
+def plot_annotations(ax: Axes, project: Project) -> None:
+    for annotation in project.annotations:
+        if not annotation.visible:
+            continue
+
+        if annotation.type == "shaded_region":
+            plot_shaded_region(ax, annotation, project)
+
+def plot_shaded_region(
+    ax: Axes,
+    annotation: Annotation,
+    project: Project,
+) -> None:
+    data = annotation.data
+    style = annotation.style
+
+    curve_id = data.get("curve_id")
+    curve = project.get_curve(curve_id)
+
+    if curve is None:
+        return
+
+    try:
+        x_start = float(data.get("x_start"))
+        x_end = float(data.get("x_end"))
+    except (TypeError, ValueError):
+        return
+
+    xmin, xmax = sorted((x_start, x_end))
+
+    x, y = curve.display_arrays()
+
+    mask = (x >= xmin) & (x <= xmax)
+
+    if not np.any(mask):
+        return
+
+    ymin, ymax = ax.get_ylim()
+
+    ax.fill_between(
+        x[mask],
+        y[mask],
+        y2=ymin,
+        color=style.get("color", curve.style.color),
+        alpha=float(style.get("alpha", 0.25)),
+        zorder=0,
+    )

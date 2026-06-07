@@ -408,6 +408,65 @@ class Dataset:
         for i, curve in enumerate(self.curves):
             curve.style = default_curve_style(i)
 
+    def fractions_for_shading(self) -> list[Fraction]:
+        """
+        Return fractions that should be considered for shading operations,
+        respecting the current fraction display settings.
+        """
+        settings = self.fraction_label_settings
+
+        fractions = [
+            fraction
+            for fraction in self.fractions
+            if not (settings.hide_waste and fraction.kind == "waste")
+        ]
+
+        if settings.hide_first_fraction and fractions:
+            fractions = fractions[1:]
+
+        return fractions
+    
+    def fraction_volume_range(
+        self,
+        start_fraction: str,
+        end_fraction: str,
+    ) -> tuple[float, float] | None:
+        """
+        Convert fraction labels into a volume range.
+        """
+
+        fractions = self.fractions_for_shading()
+
+        labels = [
+            fraction.display_label or fraction.label
+            for fraction in fractions
+        ]
+
+        try:
+            start_index = labels.index(start_fraction)
+            end_index = labels.index(end_fraction)
+        except ValueError:
+            return None
+
+        if start_index > end_index:
+            start_index, end_index = end_index, start_index
+
+        start_fraction_obj = fractions[start_index]
+        end_fraction_obj = fractions[end_index]
+
+        x_start = start_fraction_obj.start_volume
+
+        if end_fraction_obj.end_volume is not None:
+            x_end = end_fraction_obj.end_volume
+
+        elif end_index + 1 < len(fractions):
+            x_end = fractions[end_index + 1].start_volume
+
+        else:
+            x_end = end_fraction_obj.start_volume
+
+        return x_start, x_end
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,

@@ -7,7 +7,7 @@ from matplotlib.figure import Figure
 from chromaplot.core.models import Project
 from chromaplot.core.plotting import plot_project
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
 
 class PlotCanvas(FigureCanvas):
     """Matplotlib canvas for displaying a ChromaPlot Project."""
@@ -18,6 +18,14 @@ class PlotCanvas(FigureCanvas):
         self.figure = Figure(figsize=(8, 5))
         self.ax = self.figure.add_subplot(111)
         super().__init__(self.figure)
+
+        self._region_selection_callback = None
+        self._region_selection_start_x = None
+        self._region_selection_patch = None
+
+        self.mpl_connect("button_press_event", self._on_mouse_press)
+        self.mpl_connect("motion_notify_event", self._on_mouse_move)
+        self.mpl_connect("button_release_event", self._on_mouse_release)
 
         self.setParent(parent)
         self.project: Project | None = None
@@ -84,3 +92,66 @@ class PlotCanvas(FigureCanvas):
         fig.tight_layout()
         fig.savefig(path, dpi=dpi)
         plt.close(fig)
+
+    def start_region_selection(self, callback) -> None:
+        self._region_selection_callback = callback
+        self._region_selection_start_x = None
+        self.setCursor(Qt.CrossCursor)
+
+    def _on_mouse_press(self, event) -> None:
+        if self._region_selection_callback is None:
+            return
+        if event.inaxes != self.ax or event.xdata is None:
+            return
+
+        self._region_selection_start_x = event.xdata
+
+    def _on_mouse_move(self, event) -> None:
+        if self._region_selection_callback is None:
+            return
+        if self._region_selection_start_x is None:
+            return
+        if event.inaxes != self.ax or event.xdata is None:
+            return
+
+        x0 = self._region_selection_start_x
+        x1 = event.xdata
+        xmin, xmax = sorted((x0, x1))
+
+        if self._region_selection_patch is not None:
+            self._region_selection_patch.remove()
+
+        self._region_selection_patch = self.ax.axvspan(
+            xmin,
+            xmax,
+            color="#999999",
+            alpha=0.25,
+            zorder=10,
+        )
+
+        self.draw_idle()
+
+    def _on_mouse_release(self, event) -> None:
+        if self._region_selection_callback is None:
+            return
+        if self._region_selection_start_x is None:
+            return
+        if event.inaxes != self.ax or event.xdata is None:
+            return
+
+        x0 = self._region_selection_start_x
+        x1 = event.xdata
+        xmin, xmax = sorted((x0, x1))
+
+        if self._region_selection_patch is not None:
+            self._region_selection_patch.remove()
+            self._region_selection_patch = None
+
+        callback = self._region_selection_callback
+        self._region_selection_callback = None
+        self._region_selection_start_x = None
+        self.unsetCursor()
+
+        self.draw_idle()
+
+        callback(xmin, xmax)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from tkinter import dialog
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeySequence
@@ -21,7 +22,7 @@ from PyQt5.QtWidgets import (
 from chromaplot import __version__
 
 from chromaplot.core.importers import import_dataset
-from chromaplot.core.models import Project
+from chromaplot.core.models import Annotation, Project
 from chromaplot.core.project_io import load_project, save_project
 from chromaplot.core.plotting import autoscale_visible_curves
 
@@ -31,6 +32,8 @@ from .curve_settings_panel import CurveSettingsPanel
 from .plot_settings_panel import PlotSettingsPanel
 from .dataset_settings_panel import DatasetSettingsPanel
 from .fraction_settings_dialog import FractionSettingsDialog
+from .shaded_region_dialog import ShadedRegionDialog
+from .shading_settings_panel import ShadingSettingsPanel
 
 
 class MainWindow(QMainWindow):
@@ -54,11 +57,13 @@ class MainWindow(QMainWindow):
         self.dataset_settings_panel = DatasetSettingsPanel()
         self.curve_settings_panel = CurveSettingsPanel()
         self.plot_settings_panel = PlotSettingsPanel()
+        self.shading_settings_panel = ShadingSettingsPanel()
 
         self.settings_tabs = QTabWidget()
         self.settings_tabs.addTab(self.dataset_settings_panel, "Dataset")
         self.settings_tabs.addTab(self.curve_settings_panel, "Curve")
         self.settings_tabs.addTab(self.plot_settings_panel, "Plot")
+        self.settings_tabs.addTab(self.shading_settings_panel, "Shading")
         self.settings_tabs.setMinimumWidth(300)
 
         self.settings_container = QWidget()
@@ -201,6 +206,8 @@ class MainWindow(QMainWindow):
         self.dataset_settings_panel.hide_all_curves_requested.connect(self.hide_all_dataset_curves)
 
         self.dataset_settings_panel.configure_fractions_requested.connect(self.configure_dataset_fractions)
+
+        self.curve_settings_panel.add_shaded_region_requested.connect(self.add_shaded_region_for_curve)
 
     def _build_status_bar(self) -> None:
         self.status_label = QLabel("")
@@ -587,3 +594,80 @@ class MainWindow(QMainWindow):
         self.redraw_plot()
         self.mark_dirty()
 
+    def add_shaded_region_for_curve(self, curve_id: str) -> None:
+        curve = self.project.get_curve(curve_id)
+        if curve is None:
+            return
+
+        dataset = None
+        for ds in self.project.datasets:
+            if curve in ds.curves:
+                dataset = ds
+                break
+
+        if dataset is None:
+            return
+
+        dialog = ShadedRegionDialog(dataset, curve, self)
+
+        def on_fraction_visibility_changed(visible: bool) -> None:
+            self.dataset_settings_panel.set_dataset(dataset)
+            self.redraw_plot()
+            self.mark_dirty()
+
+        dialog.fraction_visibility_changed.connect(
+            on_fraction_visibility_changed
+)
+
+        # Keep a reference so Python does not garbage collect the modeless dialog.
+        self._active_shaded_region_dialog = dialog
+
+        def select_on_plot() -> None:
+            dialog.hide()
+
+            def on_selected(x_start: float, x_end: float) -> None:
+                dialog.set_volume_range(x_start, x_end)
+                dialog.show()
+                dialog.raise_()
+                dialog.activateWindow()
+
+            self.plot_canvas.start_region_selection(on_selected)
+
+        def add_region_from_dialog() -> None:
+            region = dialog.region_data()
+            if region is None:
+                return
+
+            annotation = Annotation(
+                type="shaded_region",
+                visible=True,
+                data={
+                    "label": region["label"],
+                    "x_start": region["x_start"],
+                    "x_end": region["x_end"],
+                    "curve_id": region["curve_id"],
+                    "curve_name": region["curve_name"],
+                    "dataset_id": region["dataset_id"],
+                },
+                style={
+                    "color": region["color"],
+                    "alpha": region["alpha"],
+                },
+            )
+
+            self.project.add_annotation(annotation)
+            self.redraw_plot()
+            self.mark_dirty()
+
+            dialog.close()
+            self._active_shaded_region_dialog = None
+
+        def cancel_dialog() -> None:
+            self._active_shaded_region_dialog = None
+            dialog.close()
+
+        dialog.select_on_plot_requested.connect(select_on_plot)
+        dialog.accepted.connect(add_region_from_dialog)
+        dialog.rejected.connect(cancel_dialog)
+
+        dialog.show()

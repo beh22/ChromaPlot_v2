@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 2.0.3 - 2026-XX-XX
+## Version 2.1.0 - 2026-XX-XX
 
 ### Added
 - Added ability to plot fractions and customise their appearance

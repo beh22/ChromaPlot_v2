@@ -23,6 +23,7 @@ class CurveSettingsPanel(QWidget):
     """Panel for editing the selected curve."""
 
     curve_changed = pyqtSignal(str)
+    add_shaded_region_requested = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -130,6 +131,15 @@ class CurveSettingsPanel(QWidget):
         transform_form.addRow("", self.reset_transform_button)
 
         main_layout.addWidget(self.transform_group)
+
+        self.shading_group = QGroupBox("Shading")
+        shading_layout = QVBoxLayout(self.shading_group)
+
+        self.add_shaded_region_button = QPushButton("Add shaded region...")
+        shading_layout.addWidget(self.add_shaded_region_button)
+
+        main_layout.addWidget(self.shading_group)
+
         main_layout.addStretch()
 
         scroll.setWidget(content)
@@ -147,6 +157,7 @@ class CurveSettingsPanel(QWidget):
         self.x_scale_spin.valueChanged.connect(self._apply_all)
         self.y_scale_spin.valueChanged.connect(self._apply_all)
         self.reset_transform_button.clicked.connect(self._reset_transform)
+        self.add_shaded_region_button.clicked.connect(self._request_add_shaded_region)
 
     # ------------------------------------------------------------------
     # Public API
@@ -161,6 +172,7 @@ class CurveSettingsPanel(QWidget):
         self.curve_group.setEnabled(enabled)
         self.style_group.setEnabled(enabled)
         self.transform_group.setEnabled(enabled)
+        self.shading_group.setEnabled(enabled)
 
         if curve is None:
             self.info_label.setText("Select a curve to edit its settings.")
@@ -251,3 +263,7 @@ class CurveSettingsPanel(QWidget):
         self.color_preview.setStyleSheet(
             f"background-color: {color}; border: 1px solid #666;"
         )
+
+    def _request_add_shaded_region(self) -> None:
+        if self.curve is not None:
+            self.add_shaded_region_requested.emit(self.curve.id)
