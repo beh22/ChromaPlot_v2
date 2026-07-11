@@ -567,6 +567,20 @@ class Project:
             curves.extend(dataset.visible_curves())
         return curves
 
+    def shaded_regions(self) -> list[Annotation]:
+        return [
+            ann
+            for ann in self.annotations
+            if ann.type == "shaded_region"
+        ]
+
+    def shaded_regions_for_curve(self, curve_id: str) -> list[Annotation]:
+        return [
+            ann
+            for ann in self.shaded_regions()
+            if ann.data.get("curve_id") == curve_id
+        ]
+
     def add_annotation(self, annotation: Annotation) -> None:
         self.annotations.append(annotation)
 

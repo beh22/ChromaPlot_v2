@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from tkinter import dialog
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeySequence
@@ -209,6 +208,14 @@ class MainWindow(QMainWindow):
 
         self.curve_settings_panel.add_shaded_region_requested.connect(self.add_shaded_region_for_curve)
 
+        self.shading_settings_panel.remove_region_requested.connect(
+            self.remove_shaded_region
+        )
+
+        self.shading_settings_panel.visibility_changed.connect(
+            self.set_annotation_visibility
+        )
+
     def _build_status_bar(self) -> None:
         self.status_label = QLabel("")
         status = QStatusBar()
@@ -226,6 +233,8 @@ class MainWindow(QMainWindow):
 
         width, height = self.plot_canvas.current_size_inches()
         self.plot_settings_panel.set_current_preview_size(width, height)
+
+        self.shading_settings_panel.set_project(self.project)
 
         self.plot_canvas.set_project(self.project)
         self.update_status_summary()
@@ -594,6 +603,10 @@ class MainWindow(QMainWindow):
         self.redraw_plot()
         self.mark_dirty()
 
+    # ------------------------------------------------------------------
+    # Shading
+    # ------------------------------------------------------------------
+
     def add_shaded_region_for_curve(self, curve_id: str) -> None:
         curve = self.project.get_curve(curve_id)
         if curve is None:
@@ -648,6 +661,7 @@ class MainWindow(QMainWindow):
                     "curve_id": region["curve_id"],
                     "curve_name": region["curve_name"],
                     "dataset_id": region["dataset_id"],
+                    "dataset_name": dataset.name,
                 },
                 style={
                     "color": region["color"],
@@ -656,6 +670,9 @@ class MainWindow(QMainWindow):
             )
 
             self.project.add_annotation(annotation)
+
+            self.shading_settings_panel.refresh()
+
             self.redraw_plot()
             self.mark_dirty()
 
@@ -671,3 +688,26 @@ class MainWindow(QMainWindow):
         dialog.rejected.connect(cancel_dialog)
 
         dialog.show()
+
+    def remove_shaded_region(self, annotation_id: str) -> None:
+
+        self.project.remove_annotation(annotation_id)
+
+        self.shading_settings_panel.refresh()
+        self.redraw_plot()
+        self.mark_dirty()
+
+    def set_annotation_visibility(
+        self,
+        annotation_id: str,
+        visible: bool,
+    ) -> None:
+
+        for annotation in self.project.annotations:
+            if annotation.id == annotation_id:
+                annotation.visible = visible
+                break
+
+        self.shading_settings_panel.refresh()
+        self.redraw_plot()
+        self.mark_dirty()
