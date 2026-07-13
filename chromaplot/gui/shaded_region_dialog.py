@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from chromaplot.core.models import Curve, Dataset
+from chromaplot.core.models import Annotation, Curve, Dataset
 
 
 class ShadedRegionDialog(QDialog):
@@ -259,12 +259,14 @@ class ShadedRegionDialog(QDialog):
 
         mode = self.mode_combo.currentText()
 
+        start_fraction: str | None = None
+        end_fraction: str | None = None
+
         # --------------------------------------------------------------
         # Manual volumes
         # --------------------------------------------------------------
 
         if mode == "Volumes":
-
             x_start = self.start_volume_spin.value()
             x_end = self.end_volume_spin.value()
 
@@ -273,10 +275,12 @@ class ShadedRegionDialog(QDialog):
         # --------------------------------------------------------------
 
         else:
+            start_fraction = self.start_fraction_combo.currentText()
+            end_fraction = self.end_fraction_combo.currentText()
 
             result = self.dataset.fraction_volume_range(
-                self.start_fraction_combo.currentText(),
-                self.end_fraction_combo.currentText(),
+                start_fraction,
+                end_fraction,
             )
 
             if result is None:
@@ -287,10 +291,16 @@ class ShadedRegionDialog(QDialog):
         if x_start > x_end:
             x_start, x_end = x_end, x_start
 
+            if mode == "Fractions":
+                start_fraction, end_fraction = end_fraction, start_fraction
+
         return {
             "label": self.label_edit.text().strip(),
+            "mode": mode,
             "x_start": x_start,
             "x_end": x_end,
+            "start_fraction": start_fraction,
+            "end_fraction": end_fraction,
             "curve_id": self.curve.id,
             "curve_name": self.curve.name,
             "dataset_id": self.dataset.id,
@@ -306,3 +316,43 @@ class ShadedRegionDialog(QDialog):
     def _request_fraction_visibility_change(self, visible: bool) -> None:
         self.dataset.fraction_label_settings.visible = visible
         self.fraction_visibility_changed.emit(visible)
+
+    def load_annotation(self, annotation: Annotation) -> None:
+        """Populate the dialog from an existing shaded-region annotation"""
+        data = annotation.data
+        style = annotation.style
+
+        self.setWindowTitle("Edit Shaded Region")
+
+        self.label_edit.setText(data.get("label", ""))
+
+        mode = str(data.get("mode", "Volumes"))
+        if mode not in {"Volumes", "Fractions"}:
+            mode = "Volumes"
+        
+        self.mode_combo.setCurrentText(mode)
+
+        self.start_volume_spin.setValue(float(data.get("x_start", 0.0)))
+        self.end_volume_spin.setValue(float(data.get("x_end", 0.0)))
+
+        if mode == "Fractions":
+            start_fraction = data.get("start_fraction")
+            end_fraction = data.get("end_fraction")
+
+            if start_fraction is not None:
+                index = self.start_fraction_combo.findText(start_fraction)
+                if index >= 0:
+                    self.start_fraction_combo.setCurrentIndex(index)
+
+            if end_fraction is not None:
+                index = self.end_fraction_combo.findText(end_fraction)
+                if index >= 0:
+                    self.end_fraction_combo.setCurrentIndex(index)
+
+        self.selected_color = str(
+            style.get("color", self.curve.style.color)
+        )
+        self.alpha_spin.setValue(float(style.get("alpha", 0.25)))
+        self._set_color_preview(self.selected_color)
+
+        self._update_mode_visibility()

@@ -74,97 +74,106 @@ class ShadingSettingsPanel(QWidget):
             self._on_item_changed
         )
 
+        self.tree.itemDoubleClicked.connect(
+            self._on_item_double_clicked
+        )
+
     def set_project(self, project: Project | None) -> None:
 
         self.project = project
         self.refresh()
 
     def refresh(self) -> None:
+        self.tree.blockSignals(True)
 
-        self.tree.clear()
+        try:
+            self.tree.clear()
 
-        if self.project is None:
-            return
+            if self.project is None:
+                return
 
-        dataset_items: dict[str, QTreeWidgetItem] = {}
-        curve_items: dict[tuple[str, str], QTreeWidgetItem] = {}
+            dataset_items: dict[str, QTreeWidgetItem] = {}
+            curve_items: dict[tuple[str, str], QTreeWidgetItem] = {}
 
-        for annotation in self.project.shaded_regions():
+            for annotation in self.project.shaded_regions():
 
-            dataset_name = annotation.data.get(
-                "dataset_name",
-                annotation.data.get("dataset_id", "Dataset")
-            )
-
-            curve_name = annotation.data.get(
-                "curve_name",
-                annotation.data.get("curve_id", "Curve")
-            )
-
-            label = annotation.data.get("label", "Region")
-
-            # ----------------------------------------------------------
-            # Dataset item
-            # ----------------------------------------------------------
-
-            if dataset_name not in dataset_items:
-
-                dataset_item = QTreeWidgetItem([dataset_name])
-
-                dataset_item.setFlags(
-                    Qt.ItemIsEnabled
+                dataset_name = annotation.data.get(
+                    "dataset_name",
+                    annotation.data.get("dataset_id", "Dataset")
                 )
 
-                self.tree.addTopLevelItem(dataset_item)
-
-                dataset_items[dataset_name] = dataset_item
-
-            dataset_item = dataset_items[dataset_name]
-
-            # ----------------------------------------------------------
-            # Curve item
-            # ----------------------------------------------------------
-
-            curve_key = (dataset_name, curve_name)
-
-            if curve_key not in curve_items:
-
-                curve_item = QTreeWidgetItem([curve_name])
-
-                curve_item.setFlags(
-                    Qt.ItemIsEnabled
+                curve_name = annotation.data.get(
+                    "curve_name",
+                    annotation.data.get("curve_id", "Curve")
                 )
 
-                dataset_item.addChild(curve_item)
+                label = annotation.data.get("label", "Region")
 
-                curve_items[curve_key] = curve_item
+                # ----------------------------------------------------------
+                # Dataset item
+                # ----------------------------------------------------------
 
-            curve_item = curve_items[curve_key]
+                if dataset_name not in dataset_items:
 
-            # ----------------------------------------------------------
-            # Region item
-            # ----------------------------------------------------------
+                    dataset_item = QTreeWidgetItem([dataset_name])
 
-            region_item = QTreeWidgetItem([label])
+                    dataset_item.setFlags(
+                        Qt.ItemIsEnabled
+                    )
 
-            region_item.setData(
-                0,
-                Qt.UserRole,
-                annotation.id,
-            )
+                    self.tree.addTopLevelItem(dataset_item)
 
-            region_item.setFlags(
-                Qt.ItemIsEnabled
-                | Qt.ItemIsSelectable
-                | Qt.ItemIsUserCheckable
-            )
+                    dataset_items[dataset_name] = dataset_item
 
-            region_item.setCheckState(
-                0,
-                Qt.Checked if annotation.visible else Qt.Unchecked
-            )
+                dataset_item = dataset_items[dataset_name]
 
-            curve_item.addChild(region_item)
+                # ----------------------------------------------------------
+                # Curve item
+                # ----------------------------------------------------------
+
+                curve_key = (dataset_name, curve_name)
+
+                if curve_key not in curve_items:
+
+                    curve_item = QTreeWidgetItem([curve_name])
+
+                    curve_item.setFlags(
+                        Qt.ItemIsEnabled
+                    )
+
+                    dataset_item.addChild(curve_item)
+
+                    curve_items[curve_key] = curve_item
+
+                curve_item = curve_items[curve_key]
+
+                # ----------------------------------------------------------
+                # Region item
+                # ----------------------------------------------------------
+
+                region_item = QTreeWidgetItem([label])
+
+                region_item.setData(
+                    0,
+                    Qt.UserRole,
+                    annotation.id,
+                )
+
+                region_item.setFlags(
+                    Qt.ItemIsEnabled
+                    | Qt.ItemIsSelectable
+                    | Qt.ItemIsUserCheckable
+                )
+
+                region_item.setCheckState(
+                    0,
+                    Qt.Checked if annotation.visible else Qt.Unchecked
+                )
+
+                curve_item.addChild(region_item)
+
+        finally:
+            self.tree.blockSignals(False)
 
         self.tree.expandAll()
 
@@ -208,3 +217,15 @@ class ShadingSettingsPanel(QWidget):
             str(annotation_id),
             visible,
         )
+
+    def _on_item_double_clicked(
+            self,
+            item: QTreeWidgetItem,
+            column: int
+    ) -> None:
+        annotation_id = item.data(0, Qt.UserRole)
+        
+        if annotation_id is None:
+            return
+        
+        self.edit_region_requested.emit(str(annotation_id))

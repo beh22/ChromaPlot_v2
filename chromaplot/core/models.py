@@ -580,6 +580,12 @@ class Project:
             for ann in self.shaded_regions()
             if ann.data.get("curve_id") == curve_id
         ]
+    
+    def get_annotation(self, annotation_id: str) -> Annotation | None:
+        for annotation in self.annotations:
+            if annotation.id == annotation_id:
+                return annotation
+        return None
 
     def add_annotation(self, annotation: Annotation) -> None:
         self.annotations.append(annotation)

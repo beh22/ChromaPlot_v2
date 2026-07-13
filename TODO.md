@@ -4,6 +4,12 @@
 - if a curve is selected and then the dataset button is clicked, the dataset that the curve is in should be selected
 - fix dataset tree refresh, re-expands
 
+- include dataset name on plot tab
+- have hide all curves (for all datasets) button
+- see if there is a way to make sure windows stay in same place when re-opened etc.
+- preserve tree expand state in datasets/curve and shading
+- different colours for uv traces from multiple curves
+
 ## GUI and UX Improvements
 
 ### Welcome Dialog

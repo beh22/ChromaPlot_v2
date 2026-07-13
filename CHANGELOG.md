@@ -3,6 +3,7 @@
 ## Version 2.1.0 - 2026-XX-XX
 
 ### Added
+- Added ability to create, remove and edit shaded regions
 - Added ability to plot fractions and customise their appearance
 - Added keyboard shortcuts in main and welcome windows
 

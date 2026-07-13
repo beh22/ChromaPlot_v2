@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import (
     QAction,
@@ -207,6 +207,10 @@ class MainWindow(QMainWindow):
         self.dataset_settings_panel.configure_fractions_requested.connect(self.configure_dataset_fractions)
 
         self.curve_settings_panel.add_shaded_region_requested.connect(self.add_shaded_region_for_curve)
+
+        self.shading_settings_panel.edit_region_requested.connect(
+            self.edit_shaded_region
+        )
 
         self.shading_settings_panel.remove_region_requested.connect(
             self.remove_shaded_region
@@ -630,7 +634,7 @@ class MainWindow(QMainWindow):
 
         dialog.fraction_visibility_changed.connect(
             on_fraction_visibility_changed
-)
+        )
 
         # Keep a reference so Python does not garbage collect the modeless dialog.
         self._active_shaded_region_dialog = dialog
@@ -656,8 +660,11 @@ class MainWindow(QMainWindow):
                 visible=True,
                 data={
                     "label": region["label"],
+                    "mode": region["mode"],
                     "x_start": region["x_start"],
                     "x_end": region["x_end"],
+                    "start_fraction": region["start_fraction"],
+                    "end_fraction": region["end_fraction"],
                     "curve_id": region["curve_id"],
                     "curve_name": region["curve_name"],
                     "dataset_id": region["dataset_id"],
@@ -711,3 +718,104 @@ class MainWindow(QMainWindow):
         self.shading_settings_panel.refresh()
         self.redraw_plot()
         self.mark_dirty()
+
+    def edit_shaded_region(self, annotation_id: str) -> None:
+        annotation = self.project.get_annotation(annotation_id)
+
+        if annotation is None or annotation.type != "shaded_region":
+            return
+
+        curve_id = annotation.data.get("curve_id")
+        dataset_id = annotation.data.get("dataset_id")
+
+        curve = self.project.get_curve(str(curve_id)) if curve_id else None
+        dataset = self.project.get_dataset(str(dataset_id)) if dataset_id else None
+
+        # Fallback for older annotations that may not have dataset_id.
+        if curve is not None and dataset is None:
+            for candidate in self.project.datasets:
+                if candidate.get_curve(curve.id) is not None:
+                    dataset = candidate
+                    break
+
+        if curve is None or dataset is None:
+            QMessageBox.warning(
+                self,
+                "Cannot edit shaded region",
+                "The curve or dataset associated with this region could not be found.",
+            )
+            return
+
+        dialog = ShadedRegionDialog(dataset, curve, self)
+        dialog.load_annotation(annotation)
+
+        self._active_shaded_region_dialog = dialog
+
+        def on_fraction_visibility_changed(visible: bool) -> None:
+            self.dataset_settings_panel.set_dataset(dataset)
+            self.redraw_plot()
+            self.mark_dirty()
+
+        def select_on_plot() -> None:
+            dialog.hide()
+
+            def on_selected(x_start: float, x_end: float) -> None:
+                dialog.set_volume_range(x_start, x_end)
+                dialog.show()
+                dialog.raise_()
+                dialog.activateWindow()
+
+            self.plot_canvas.start_region_selection(on_selected)
+
+        def update_region_from_dialog() -> None:
+            region = dialog.region_data()
+
+            if region is None:
+                QMessageBox.warning(
+                    dialog,
+                    "Invalid shaded region",
+                    "The selected shaded region could not be resolved.",
+                )
+                return
+
+            annotation.data.update(
+                {
+                    "label": region["label"],
+                    "mode": region["mode"],
+                    "x_start": region["x_start"],
+                    "x_end": region["x_end"],
+                    "start_fraction": region["start_fraction"],
+                    "end_fraction": region["end_fraction"],
+                    "curve_id": region["curve_id"],
+                    "curve_name": region["curve_name"],
+                    "dataset_id": region["dataset_id"],
+                    "dataset_name": dataset.name,
+                }
+            )
+
+            annotation.style.update(
+                {
+                    "color": region["color"],
+                    "alpha": region["alpha"],
+                }
+            )
+
+            self.shading_settings_panel.refresh()
+            self.redraw_plot()
+            self.mark_dirty()
+
+            dialog.close()
+            self._active_shaded_region_dialog = None
+
+        def cancel_dialog() -> None:
+            self._active_shaded_region_dialog = None
+            dialog.close()
+
+        dialog.fraction_visibility_changed.connect(
+            on_fraction_visibility_changed
+        )
+        dialog.select_on_plot_requested.connect(select_on_plot)
+        dialog.accepted.connect(update_region_from_dialog)
+        dialog.rejected.connect(cancel_dialog)
+
+        dialog.show()
