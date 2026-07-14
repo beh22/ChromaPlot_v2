@@ -6,7 +6,6 @@
 
 - include dataset name on plot tab
 - have hide all curves (for all datasets) button
-- see if there is a way to make sure windows stay in same place when re-opened etc.
 - preserve tree expand state in datasets/curve and shading
 - different colours for uv traces from multiple curves
 
@@ -34,13 +33,6 @@
 ## Plotting Features
 
 ### Annotations and Regions
-- Fraction number display
-  - Customise appearance
-  - Toggle visibility
-- Shaded regions
-  - Define by fraction numbers
-  - Define by volume range
-  - Editable/removable region list
 - Vertical marker
 - Text annotations
 

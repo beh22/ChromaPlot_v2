@@ -15,6 +15,11 @@ from PyQt5.QtWidgets import (
 
 from chromaplot.core.models import Dataset
 
+from .dialog_geometry import (
+    restore_dialog_geometry,
+    save_dialog_geometry,
+)
+
 
 class FractionSettingsDialog(QDialog):
     """Dialog for customising fraction label display."""
@@ -29,6 +34,11 @@ class FractionSettingsDialog(QDialog):
 
         self._build_ui()
         self._load_settings()
+
+        restore_dialog_geometry(
+            self,
+            "fraction_settings",
+        )
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -167,3 +177,24 @@ class FractionSettingsDialog(QDialog):
         )
 
         self.accept()
+
+    def accept(self) -> None:
+        save_dialog_geometry(
+            self,
+            "fraction_settings",
+        )
+        super().accept()
+
+    def reject(self) -> None:
+        save_dialog_geometry(
+            self,
+            "fraction_settings",
+        )
+        super().reject()
+
+    def closeEvent(self, event) -> None:
+        save_dialog_geometry(
+            self,
+            "fraction_settings",
+        )
+        super().closeEvent(event)

@@ -20,6 +20,11 @@ from PyQt5.QtWidgets import (
 
 from chromaplot.core.models import Annotation, Curve, Dataset
 
+from .dialog_geometry import (
+    restore_dialog_geometry,
+    save_dialog_geometry,
+)
+
 
 class ShadedRegionDialog(QDialog):
     """Dialog for creating/editing shaded regions."""
@@ -46,6 +51,11 @@ class ShadedRegionDialog(QDialog):
         self._build_ui()
         self._connect_signals()
         self._update_mode_visibility()
+
+        restore_dialog_geometry(
+            self,
+            "shaded_region",
+        )
 
     # ------------------------------------------------------------------
     # UI setup
@@ -340,12 +350,12 @@ class ShadedRegionDialog(QDialog):
             end_fraction = data.get("end_fraction")
 
             if start_fraction is not None:
-                index = self.start_fraction_combo.findText(start_fraction)
+                index = self.start_fraction_combo.findText(str(start_fraction))
                 if index >= 0:
                     self.start_fraction_combo.setCurrentIndex(index)
 
             if end_fraction is not None:
-                index = self.end_fraction_combo.findText(end_fraction)
+                index = self.end_fraction_combo.findText(str(end_fraction))
                 if index >= 0:
                     self.end_fraction_combo.setCurrentIndex(index)
 
@@ -356,3 +366,24 @@ class ShadedRegionDialog(QDialog):
         self._set_color_preview(self.selected_color)
 
         self._update_mode_visibility()
+
+    def accept(self) -> None:
+        save_dialog_geometry(
+            self,
+            "shaded_region",
+        )
+        super().accept()
+
+    def reject(self) -> None:
+        save_dialog_geometry(
+            self,
+            "shaded_region",
+        )
+        super().reject()
+
+    def closeEvent(self, event) -> None:
+        save_dialog_geometry(
+            self,
+            "shaded_region",
+        )
+        super().closeEvent(event)

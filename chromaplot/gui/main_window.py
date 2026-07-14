@@ -640,11 +640,13 @@ class MainWindow(QMainWindow):
         self._active_shaded_region_dialog = dialog
 
         def select_on_plot() -> None:
+            dialog_geometry = dialog.saveGeometry()
             dialog.hide()
 
             def on_selected(x_start: float, x_end: float) -> None:
                 dialog.set_volume_range(x_start, x_end)
                 dialog.show()
+                dialog.restoreGeometry(dialog_geometry)
                 dialog.raise_()
                 dialog.activateWindow()
 
@@ -757,10 +759,12 @@ class MainWindow(QMainWindow):
             self.mark_dirty()
 
         def select_on_plot() -> None:
+            dialog_geometry = dialog.saveGeometry()
             dialog.hide()
 
             def on_selected(x_start: float, x_end: float) -> None:
                 dialog.set_volume_range(x_start, x_end)
+                dialog.restoreGeometry(dialog_geometry)
                 dialog.show()
                 dialog.raise_()
                 dialog.activateWindow()
