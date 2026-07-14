@@ -29,6 +29,7 @@ class CurveSettingsPanel(QWidget):
         super().__init__(parent)
 
         self.curve: Curve | None = None
+        self.dataset_name: str | None = None
         self._updating = False
 
         self._build_ui()
@@ -61,6 +62,9 @@ class CurveSettingsPanel(QWidget):
 
         self.visible_check = QCheckBox("Visible")
         curve_form.addRow("", self.visible_check)
+
+        self.dataset_label = QLabel("-")
+        curve_form.addRow("Dataset", self.dataset_label)
 
         self.curve_type_label = QLabel("-")
         curve_form.addRow("Type", self.curve_type_label)
@@ -163,9 +167,13 @@ class CurveSettingsPanel(QWidget):
     # Public API
     # ------------------------------------------------------------------
 
-    def set_curve(self, curve: Curve | None) -> None:
+    def set_curve(self,
+                  curve: Curve | None,
+                  dataset_name: str | None = None,
+        ) -> None:
         """Load a curve into the panel, or disable the panel if None."""
         self.curve = curve
+        self.dataset_name = dataset_name
         self._updating = True
 
         enabled = curve is not None
@@ -181,6 +189,7 @@ class CurveSettingsPanel(QWidget):
             self.curve_type_label.setText("-")
             self.x_label.setText("-")
             self.y_label.setText("-")
+            self.dataset_label.setText("-")
             self._set_color_preview("#ffffff")
             self._updating = False
             return
@@ -191,7 +200,7 @@ class CurveSettingsPanel(QWidget):
         self.curve_type_label.setText(str(curve.metadata.get("curve_type", "unknown")))
         self.x_label.setText(f"{curve.x_label} ({curve.x_unit})")
         self.y_label.setText(f"{curve.y_label} ({curve.y_unit})")
-
+        self.dataset_label.setText(dataset_name or "-")
         self._set_color_preview(curve.style.color)
         self.linewidth_spin.setValue(curve.style.linewidth)
         self.linestyle_combo.setCurrentText(curve.style.linestyle)
@@ -256,7 +265,7 @@ class CurveSettingsPanel(QWidget):
             return
 
         self.curve.reset_transform()
-        self.set_curve(self.curve)
+        self.set_curve(self.curve, self.dataset_name)
         self.curve_changed.emit(self.curve.id)
 
     def _set_color_preview(self, color: str) -> None:

@@ -1,13 +1,11 @@
 # ChromaPlot v2 TODO
 
 - fix 'visible' button in curve tab to sync with box in dataset tree
-- if a curve is selected and then the dataset button is clicked, the dataset that the curve is in should be selected
 - fix dataset tree refresh, re-expands
 
-- include dataset name on plot tab
-- have hide all curves (for all datasets) button
 - preserve tree expand state in datasets/curve and shading
 - different colours for uv traces from multiple curves
+- improve limits for tick spacing and have button to reset to auto
 
 ## GUI and UX Improvements
 

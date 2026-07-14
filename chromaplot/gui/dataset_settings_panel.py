@@ -28,6 +28,8 @@ class DatasetSettingsPanel(QWidget):
     dataset_remove_requested = pyqtSignal(str)
     show_all_curves_requested = pyqtSignal(str)
     hide_all_curves_requested = pyqtSignal(str)
+    show_all_project_curves_requested = pyqtSignal()
+    hide_all_project_curves_requested = pyqtSignal()
     configure_fractions_requested = pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -82,19 +84,30 @@ class DatasetSettingsPanel(QWidget):
 
         main_layout.addWidget(self.dataset_group)
 
-        self.actions_group = QGroupBox("Actions")
+        self.actions_group = QGroupBox("Dataset actions")
         actions_layout = QVBoxLayout(self.actions_group)
 
-        self.show_all_button = QPushButton("Show all curves")
+        self.show_all_button = QPushButton("Show all curves in this dataset")
         actions_layout.addWidget(self.show_all_button)
 
-        self.hide_all_button = QPushButton("Hide all curves")
+        self.hide_all_button = QPushButton("Hide all curves in this dataset")
         actions_layout.addWidget(self.hide_all_button)
 
         self.remove_dataset_button = QPushButton("Remove dataset")
         actions_layout.addWidget(self.remove_dataset_button)
 
         main_layout.addWidget(self.actions_group)
+
+        self.project_actions_group = QGroupBox("Project actions")
+        project_actions_layout = QVBoxLayout(self.project_actions_group)
+
+        self.show_all_project_button = QPushButton("Show all curves in project")
+        project_actions_layout.addWidget(self.show_all_project_button)
+
+        self.hide_all_project_button = QPushButton("Hide all curves in project")
+        project_actions_layout.addWidget(self.hide_all_project_button)
+
+        main_layout.addWidget(self.project_actions_group)
 
         self.fractions_group = QGroupBox("Fraction labels")
         fractions_layout = QFormLayout(self.fractions_group)
@@ -148,6 +161,9 @@ class DatasetSettingsPanel(QWidget):
         self.hide_all_button.clicked.connect(self._request_hide_all)
         self.remove_dataset_button.clicked.connect(self._request_remove_dataset)
 
+        self.show_all_project_button.clicked.connect(self._request_show_all_project)
+        self.hide_all_project_button.clicked.connect(self._request_hide_all_project)
+        
         self.show_fractions_check.toggled.connect(self._apply_fraction_settings)
         self.fraction_label_mode_combo.currentTextChanged.connect(self._apply_fraction_settings)
         self.hide_waste_check.toggled.connect(self._apply_fraction_settings)
@@ -164,6 +180,7 @@ class DatasetSettingsPanel(QWidget):
         self.dataset_group.setEnabled(enabled)
         self.actions_group.setEnabled(enabled)
         self.notes_group.setEnabled(enabled)
+        self.project_actions_group.setEnabled(True)
 
         if dataset is None:
             self.info_label.setText("Select a dataset to edit its settings.")
@@ -236,6 +253,12 @@ class DatasetSettingsPanel(QWidget):
     def _request_hide_all(self) -> None:
         if self.dataset is not None:
             self.hide_all_curves_requested.emit(self.dataset.id)
+
+    def _request_show_all_project(self) -> None:
+        self.show_all_project_curves_requested.emit()
+
+    def _request_hide_all_project(self) -> None:
+        self.hide_all_project_curves_requested.emit()
 
     def _request_remove_dataset(self) -> None:
         if self.dataset is not None:

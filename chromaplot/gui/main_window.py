@@ -203,6 +203,9 @@ class MainWindow(QMainWindow):
         self.dataset_settings_panel.dataset_remove_requested.connect(self.remove_dataset)
         self.dataset_settings_panel.show_all_curves_requested.connect(self.show_all_dataset_curves)
         self.dataset_settings_panel.hide_all_curves_requested.connect(self.hide_all_dataset_curves)
+        
+        self.dataset_settings_panel.show_all_project_curves_requested.connect(self.show_all_project_curves)
+        self.dataset_settings_panel.hide_all_project_curves_requested.connect(self.hide_all_project_curves)
 
         self.dataset_settings_panel.configure_fractions_requested.connect(self.configure_dataset_fractions)
 
@@ -444,11 +447,24 @@ class MainWindow(QMainWindow):
         self.mark_dirty()
 
     def on_curve_selected(self, curve_id: str) -> None:
-        curve = self.project.get_curve(curve_id)
+        curve = None
+        dataset = None
+
+        for ds in self.project.datasets:
+            curve = ds.get_curve(curve_id)
+            if curve is not None:
+                dataset = ds
+                break
+        
         if curve is None:
             return
 
-        self.curve_settings_panel.set_curve(curve)
+        self.curve_settings_panel.set_curve(
+            curve,
+            dataset.name if dataset is not None else None,
+        )
+
+        self.dataset_settings_panel.set_dataset(dataset)
         self.settings_tabs.setCurrentWidget(self.curve_settings_panel)
         self.statusBar().showMessage(f"Selected curve: {curve.name}", 3000)
 
@@ -568,6 +584,32 @@ class MainWindow(QMainWindow):
             curve.visible = False
         
         self.dataset_settings_panel.set_dataset(dataset)
+        self.dataset_tree.set_project(self.project)
+        self.redraw_plot()
+        self.mark_dirty()
+
+    def hide_all_project_curves(self) -> None:
+        for dataset in self.project.datasets:
+            for curve in dataset.curves:
+                curve.visible = False
+
+        current_dataset = self.dataset_settings_panel.dataset
+        if current_dataset is not None:
+            self.dataset_settings_panel.set_dataset(current_dataset)
+
+        self.dataset_tree.set_project(self.project)
+        self.redraw_plot()
+        self.mark_dirty()
+
+    def show_all_project_curves(self) -> None:
+        for dataset in self.project.datasets:
+            for curve in dataset.curves:
+                curve.visible = True
+
+        current_dataset = self.dataset_settings_panel.dataset
+        if current_dataset is not None:
+            self.dataset_settings_panel.set_dataset(current_dataset)
+
         self.dataset_tree.set_project(self.project)
         self.redraw_plot()
         self.mark_dirty()
