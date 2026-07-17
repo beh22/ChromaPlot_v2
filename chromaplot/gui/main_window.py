@@ -244,11 +244,23 @@ class MainWindow(QMainWindow):
         self.shading_settings_panel.set_project(self.project)
 
         self.plot_canvas.set_project(self.project)
+
+        self.plot_settings_panel.set_current_axis_limits(
+            self.plot_canvas.ax.get_xlim(),
+            self.plot_canvas.ax.get_ylim(),
+        )
+
         self.update_status_summary()
         self.update_window_title()
 
     def redraw_plot(self) -> None:
         self.plot_canvas.redraw()
+
+        self.plot_settings_panel.set_current_axis_limits(
+            self.plot_canvas.ax.get_xlim(),
+            self.plot_canvas.ax.get_ylim(),
+        )
+
         self.update_status_summary()
 
     def mark_dirty(self) -> None:

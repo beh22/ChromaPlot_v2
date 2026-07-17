@@ -3,12 +3,19 @@
 ## Version 2.1.0 - 2026-XX-XX
 
 ### Added
-- Added ability to create, remove and edit shaded regions
-- Added ability to plot fractions and customise their appearance
-- Added keyboard shortcuts in main and welcome windows
+- Added configurable fraction labels for imported datasets, including sequential numbering, filtering options, and custom line and text styling
+- Added shaded regions linked to individual curves, with support for volume ranges, fraction ranges, and interactive click-drag selection
+- Added a Shading tab for viewing, editing, hiding, and removing shaded regions across the project
+- Added project-wide controls to show or hide all curves
+- Added persistent window positioning for fraction and shaded-region dialogs
 
 ### Changed
-- Improved dataset handling
+- Updated the Curve tab to display the parent dataset name
+- Updated the Dataset tab so it remains populated when a curve within that dataset is selected
+- Improved tick-spacing controls with safer minimum spacing and Auto reset buttons
+
+### Fixed
+- Prevented excessive tick generation from very small manual tick-spacing values
 
 
 ## Version 2.0.2 - 2026-05-26

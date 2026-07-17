@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import nullcontext
 from typing import Literal
 
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -259,17 +260,52 @@ def apply_plot_settings(
     ticks = settings.tick_settings
 
     # Tick spacing
-    if ticks.x_major_spacing:
-        ax.xaxis.set_major_locator(MultipleLocator(ticks.x_major_spacing))
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
 
-    if ticks.x_minor_spacing:
-        ax.xaxis.set_minor_locator(MultipleLocator(ticks.x_minor_spacing))
+    x_major_spacing = _safe_locator_spacing(
+        ticks.x_major_spacing,
+        xlim,
+        MAX_MAJOR_TICKS,
+    )
 
-    if ticks.y_major_spacing:
-        ax.yaxis.set_major_locator(MultipleLocator(ticks.y_major_spacing))
+    x_minor_spacing = _safe_locator_spacing(
+        ticks.x_minor_spacing,
+        xlim,
+        MAX_MINOR_TICKS,
+    )
 
-    if ticks.y_minor_spacing:
-        ax.yaxis.set_minor_locator(MultipleLocator(ticks.y_minor_spacing))
+    y_major_spacing = _safe_locator_spacing(
+        ticks.y_major_spacing,
+        ylim,
+        MAX_MAJOR_TICKS,
+    )
+
+    y_minor_spacing = _safe_locator_spacing(
+        ticks.y_minor_spacing,
+        ylim,
+        MAX_MINOR_TICKS,
+    )
+
+    if x_major_spacing is not None:
+        ax.xaxis.set_major_locator(
+            MultipleLocator(x_major_spacing)
+        )
+
+    if x_minor_spacing is not None:
+        ax.xaxis.set_minor_locator(
+            MultipleLocator(x_minor_spacing)
+        )
+
+    if y_major_spacing is not None:
+        ax.yaxis.set_major_locator(
+            MultipleLocator(y_major_spacing)
+        )
+
+    if y_minor_spacing is not None:
+        ax.yaxis.set_minor_locator(
+            MultipleLocator(y_minor_spacing)
+        )
 
     # Major ticks
     ax.tick_params(
@@ -331,7 +367,46 @@ def apply_plot_settings(
         if legend is not None:
             legend.set_draggable(False)
 
+MAX_MAJOR_TICKS = 50
+MAX_MINOR_TICKS = 200
 
+def _safe_locator_spacing(
+    spacing: float | None,
+    limits: tuple[float, float],
+    maximum_ticks: int,
+) -> float | None:
+    if spacing is None or spacing <= 0:
+        return None
+
+    span = abs(float(limits[1]) - float(limits[0]))
+
+    if span <= 0:
+        return float(spacing)
+
+    minimum_spacing = _nice_spacing_at_least(
+        span / maximum_ticks
+    )
+
+    return max(float(spacing), minimum_spacing)
+
+def _nice_spacing_at_least(value: float) -> float:
+    if value <= 0:
+        return 1.0
+
+    exponent = math.floor(math.log10(value))
+    magnitude = 10 ** exponent
+    normalised = value / magnitude
+
+    if normalised <= 1:
+        nice_value = 1
+    elif normalised <= 2:
+        nice_value = 2
+    elif normalised <= 5:
+        nice_value = 5
+    else:
+        nice_value = 10
+
+    return nice_value * magnitude
 
 def apply_clean_plot_style(ax: Axes) -> None:
     """

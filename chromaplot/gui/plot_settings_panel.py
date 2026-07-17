@@ -22,6 +22,11 @@ from PyQt5.QtCore import Qt
 
 from chromaplot.core.models import PlotSettings
 
+import math
+
+MAX_MAJOR_TICKS = 50
+MAX_MINOR_TICKS = 200
+
 
 class PlotSettingsPanel(QWidget):
     """Panel for editing project-level plot settings."""
@@ -35,6 +40,9 @@ class PlotSettingsPanel(QWidget):
 
         self.settings: PlotSettings | None = None
         self._updating = False
+
+        self._current_xlim: tuple[float, float] | None = None
+        self._current_ylim: tuple[float, float] | None = None
 
         self._build_ui()
         self._connect_signals()
@@ -244,29 +252,38 @@ class PlotSettingsPanel(QWidget):
         self.tick_direction_combo.addItems(["out", "in", "inout"])
         tick_form.addRow("Direction", self.tick_direction_combo)
 
-        self.x_major_spacing_spin = QDoubleSpinBox()
-        self.x_major_spacing_spin.setRange(0.0, 1_000_000.0)
-        self.x_major_spacing_spin.setDecimals(4)
-        self.x_major_spacing_spin.setSpecialValueText("Auto")
-        tick_form.addRow("X major spacing", self.x_major_spacing_spin)
+        (
+            self.x_major_spacing_widget,
+            self.x_major_spacing_spin,
+            self.x_major_spacing_auto_button,
+        ) = self._make_tick_spacing_control()
+        tick_form.addRow("X major spacing", self.x_major_spacing_widget)
 
-        self.x_minor_spacing_spin = QDoubleSpinBox()
-        self.x_minor_spacing_spin.setRange(0.0, 1_000_000.0)
-        self.x_minor_spacing_spin.setDecimals(4)
-        self.x_minor_spacing_spin.setSpecialValueText("Auto")
-        tick_form.addRow("X minor spacing", self.x_minor_spacing_spin)
+        (
+            self.x_minor_spacing_widget,
+            self.x_minor_spacing_spin,
+            self.x_minor_spacing_auto_button,
+        ) = self._make_tick_spacing_control()
+        tick_form.addRow("X minor spacing", self.x_minor_spacing_widget)
 
-        self.y_major_spacing_spin = QDoubleSpinBox()
-        self.y_major_spacing_spin.setRange(0.0, 1_000_000.0)
-        self.y_major_spacing_spin.setDecimals(4)
-        self.y_major_spacing_spin.setSpecialValueText("Auto")
-        tick_form.addRow("Y major spacing", self.y_major_spacing_spin)
+        (
+            self.y_major_spacing_widget,
+            self.y_major_spacing_spin,
+            self.y_major_spacing_auto_button,
+        ) = self._make_tick_spacing_control()
+        tick_form.addRow("Y major spacing", self.y_major_spacing_widget)
 
-        self.y_minor_spacing_spin = QDoubleSpinBox()
-        self.y_minor_spacing_spin.setRange(0.0, 1_000_000.0)
-        self.y_minor_spacing_spin.setDecimals(4)
-        self.y_minor_spacing_spin.setSpecialValueText("Auto")
-        tick_form.addRow("Y minor spacing", self.y_minor_spacing_spin)
+        (
+            self.y_minor_spacing_widget,
+            self.y_minor_spacing_spin,
+            self.y_minor_spacing_auto_button,
+        ) = self._make_tick_spacing_control()
+        tick_form.addRow("Y minor spacing", self.y_minor_spacing_widget)
+
+        self.reset_tick_spacing_button = QPushButton(
+            "Reset all spacing to Auto"
+        )
+        tick_form.addRow("", self.reset_tick_spacing_button)
 
         self.major_tick_length_spin = QDoubleSpinBox()
         self.major_tick_length_spin.setRange(0.0, 50.0)
@@ -309,6 +326,30 @@ class PlotSettingsPanel(QWidget):
         spin.setRange(1, 100)
         spin.setSingleStep(1)
         return spin
+    
+    def _make_tick_spacing_control(
+        self,
+    ) -> tuple[QWidget, QDoubleSpinBox, QPushButton]:
+        widget = QWidget()
+        layout = QHBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
+        spin = QDoubleSpinBox()
+        spin.setRange(0.0, 1_000_000.0)
+        spin.setDecimals(4)
+        spin.setSpecialValueText("Auto")
+        spin.setKeyboardTracking(False)
+        spin.setSingleStep(1.0)
+        
+
+        auto_button = QPushButton("Auto")
+        auto_button.setMaximumWidth(55)
+
+        layout.addWidget(spin)
+        layout.addWidget(auto_button)
+
+        return widget, spin, auto_button
 
     def _connect_signals(self) -> None:
         self.title_edit.editingFinished.connect(self._apply_all)
@@ -353,6 +394,26 @@ class PlotSettingsPanel(QWidget):
         self.x_minor_spacing_spin.valueChanged.connect(self._apply_all)
         self.y_major_spacing_spin.valueChanged.connect(self._apply_all)
         self.y_minor_spacing_spin.valueChanged.connect(self._apply_all)
+
+        self.x_major_spacing_auto_button.clicked.connect(
+            lambda: self._reset_tick_spacing(self.x_major_spacing_spin)
+        )
+
+        self.x_minor_spacing_auto_button.clicked.connect(
+            lambda: self._reset_tick_spacing(self.x_minor_spacing_spin)
+        )
+
+        self.y_major_spacing_auto_button.clicked.connect(
+            lambda: self._reset_tick_spacing(self.y_major_spacing_spin)
+        )
+
+        self.y_minor_spacing_auto_button.clicked.connect(
+            lambda: self._reset_tick_spacing(self.y_minor_spacing_spin)
+        )
+
+        self.reset_tick_spacing_button.clicked.connect(
+            self._reset_all_tick_spacing
+        )
 
         self.major_tick_length_spin.valueChanged.connect(self._apply_all)
         self.minor_tick_length_spin.valueChanged.connect(self._apply_all)
@@ -448,6 +509,22 @@ class PlotSettingsPanel(QWidget):
         self.plot_xkcd_check.setChecked(settings.plot_xkcd)
         self._updating = False
 
+    def set_current_axis_limits(
+        self,
+        xlim: tuple[float, float],
+        ylim: tuple[float, float],
+    ) -> None:
+        self._current_xlim = (
+            float(xlim[0]),
+            float(xlim[1]),
+        )
+        self._current_ylim = (
+            float(ylim[0]),
+            float(ylim[1]),
+        )
+
+        self._update_tick_spacing_steps()
+
     # ------------------------------------------------------------------
     # Internal update methods
     # ------------------------------------------------------------------
@@ -508,10 +585,44 @@ class PlotSettingsPanel(QWidget):
         ticks.minor_ticks = self.minor_ticks_check.isChecked()
         ticks.tick_direction = self.tick_direction_combo.currentText()
 
-        ticks.x_major_spacing = self.x_major_spacing_spin.value() or None
-        ticks.x_minor_spacing = self.x_minor_spacing_spin.value() or None
-        ticks.y_major_spacing = self.y_major_spacing_spin.value() or None
-        ticks.y_minor_spacing = self.y_minor_spacing_spin.value() or None
+        x_major_spacing = self._validated_tick_spacing(
+            self.x_major_spacing_spin.value(),
+            self._current_xlim,
+            MAX_MAJOR_TICKS,
+        )
+
+        x_minor_spacing = self._validated_tick_spacing(
+            self.x_minor_spacing_spin.value(),
+            self._current_xlim,
+            MAX_MINOR_TICKS,
+        )
+
+        y_major_spacing = self._validated_tick_spacing(
+            self.y_major_spacing_spin.value(),
+            self._current_ylim,
+            MAX_MAJOR_TICKS,
+        )
+
+        y_minor_spacing = self._validated_tick_spacing(
+            self.y_minor_spacing_spin.value(),
+            self._current_ylim,
+            MAX_MINOR_TICKS,
+        )
+
+        ticks.x_major_spacing = x_major_spacing
+        ticks.x_minor_spacing = x_minor_spacing
+        ticks.y_major_spacing = y_major_spacing
+        ticks.y_minor_spacing = y_minor_spacing
+
+        self._updating = True
+
+        try:
+            self.x_major_spacing_spin.setValue(x_major_spacing or 0.0)
+            self.x_minor_spacing_spin.setValue(x_minor_spacing or 0.0)
+            self.y_major_spacing_spin.setValue(y_major_spacing or 0.0)
+            self.y_minor_spacing_spin.setValue(y_minor_spacing or 0.0)
+        finally:
+            self._updating = False
 
         ticks.major_tick_length = self.major_tick_length_spin.value()
         ticks.minor_tick_length = self.minor_tick_length_spin.value()
@@ -524,3 +635,96 @@ class PlotSettingsPanel(QWidget):
     def _update_legend_bbox_visibility(self) -> None:
         show_bbox_controls = self.legend_location_combo.currentText() == "outside top"
         self.legend_bbox_widget.setVisible(show_bbox_controls)
+
+    def _reset_tick_spacing(self, spin: QDoubleSpinBox) -> None:
+        spin.setValue(0.0)
+
+    def _reset_all_tick_spacing(self) -> None:
+        self._updating = True
+
+        try:
+            self.x_major_spacing_spin.setValue(0.0)
+            self.x_minor_spacing_spin.setValue(0.0)
+            self.y_major_spacing_spin.setValue(0.0)
+            self.y_minor_spacing_spin.setValue(0.0)
+        finally:
+            self._updating = False
+
+        self._apply_all()
+
+    def _update_tick_spacing_steps(self) -> None:
+        x_span = self._axis_span(self._current_xlim)
+        y_span = self._axis_span(self._current_ylim)
+
+        if x_span is not None:
+            self.x_major_spacing_spin.setSingleStep(
+                self._minimum_spacing(x_span, MAX_MAJOR_TICKS)
+            )
+            self.x_minor_spacing_spin.setSingleStep(
+                self._minimum_spacing(x_span, MAX_MINOR_TICKS)
+            )
+
+        if y_span is not None:
+            self.y_major_spacing_spin.setSingleStep(
+                self._minimum_spacing(y_span, MAX_MAJOR_TICKS)
+            )
+            self.y_minor_spacing_spin.setSingleStep(
+                self._minimum_spacing(y_span, MAX_MINOR_TICKS)
+            )
+
+    @staticmethod
+    def _axis_span(
+        limits: tuple[float, float] | None,
+    ) -> float | None:
+        if limits is None:
+            return None
+
+        span = abs(float(limits[1]) - float(limits[0]))
+
+        if span <= 0:
+            return None
+
+        return span
+
+    @staticmethod
+    def _minimum_spacing(
+        axis_span: float,
+        maximum_ticks: int,
+    ) -> float:
+        raw_spacing = axis_span / maximum_ticks
+
+        if raw_spacing <= 0:
+            return 1.0
+        
+        exponent = math.floor(math.log10(raw_spacing))
+        magnitude = 10 ** exponent
+        normalised = raw_spacing / magnitude
+
+        if normalised < 1:
+            nice_value = 1
+        elif normalised < 2:
+            nice_value = 2
+        elif normalised < 5:
+            nice_value = 5
+        else:
+            nice_value = 10
+
+        return nice_value * magnitude
+    
+    def _validated_tick_spacing(
+        self,
+        value: float,
+        limits: tuple[float, float] | None,
+        maximum_ticks: int,
+    ) -> float | None:
+        if value <= 0:
+            return None
+
+        span = self._axis_span(limits)
+
+        if span is None:
+            return value
+
+        minimum = self._minimum_spacing(span, maximum_ticks)
+
+        return max(value, minimum)

@@ -5,7 +5,6 @@
 
 - preserve tree expand state in datasets/curve and shading
 - different colours for uv traces from multiple curves
-- improve limits for tick spacing and have button to reset to auto
 
 ## GUI and UX Improvements
 
