@@ -460,17 +460,17 @@ def default_style_for_curve_type(curve_type: str, index: int) -> CurveStyle:
     if curve_type == "uv_auxiliary":
         return CurveStyle(color="#1f77b4", linewidth=1.0, linestyle=":", alpha=0.6)
     if curve_type == "conductivity":
-        return CurveStyle(color="#2ca02c", linewidth=1.2, linestyle="-")
-    if curve_type == "gradient":        
-        return CurveStyle(color="#ff7f0e", linewidth=1.0, linestyle="--")
+        return CurveStyle(color="#2ca02c", linewidth=1.2, linestyle="--")
+    if curve_type == "gradient":
+        return CurveStyle(color="#ff7f0e", linewidth=1.0, linestyle="-.")
     if curve_type == "pressure":
         return CurveStyle(color="#d62728", linewidth=1.0, linestyle=":")
     if curve_type == "temperature":
         return CurveStyle(color="#9467bd", linewidth=1.0, linestyle="-.")
     if curve_type == "ph":
-        return CurveStyle(color="#8c564b", linewidth=1.0, linestyle="-.")
+        return CurveStyle(color="#8c564b", linewidth=1.0, linestyle="--")
     if curve_type == "flow":
-        return CurveStyle(color="#7f7f7f", linewidth=1.0, linestyle="--")
+        return CurveStyle(color="#7f7f7f", linewidth=1.0, linestyle=":")
 
     return default_curve_style(index)
 

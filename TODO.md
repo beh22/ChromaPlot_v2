@@ -1,10 +1,5 @@
 # ChromaPlot v2 TODO
 
-- fix dataset tree refresh, re-expands
-
-- preserve tree expand state in datasets/curve and shading
-- different colours for uv traces from multiple curves
-
 ## GUI and UX Improvements
 
 ### Welcome Dialog

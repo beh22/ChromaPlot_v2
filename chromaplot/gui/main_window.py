@@ -21,9 +21,10 @@ from PyQt5.QtWidgets import (
 from chromaplot import __version__
 
 from chromaplot.core.importers import import_dataset
-from chromaplot.core.models import Annotation, Project
+from chromaplot.core.models import Annotation, Dataset, Project
 from chromaplot.core.project_io import load_project, save_project
 from chromaplot.core.plotting import autoscale_visible_curves
+from chromaplot.core.styles import DATASET_COLOURS
 
 from .dataset_tree import DatasetTreeWidget
 from .plot_canvas import PlotCanvas
@@ -405,6 +406,9 @@ class MainWindow(QMainWindow):
         for path in paths:
             try:
                 dataset = import_dataset(path)
+
+                self.apply_imported_dataset_colour(dataset)
+
                 self.project.add_dataset(dataset)
                 imported += 1
             except Exception as exc:
@@ -423,6 +427,29 @@ class MainWindow(QMainWindow):
                 "Some files could not be imported",
                 "\n\n".join(errors),
             )
+
+    def next_imported_dataset_colour(self) -> str:
+        used_colours = {
+            dataset.display_color.lower()
+            for dataset in self.project.datasets
+            if dataset.display_color is not None
+        }
+
+        for colour in DATASET_COLOURS:
+            if colour.lower() not in used_colours:
+                return colour
+
+        return DATASET_COLOURS[
+            len(self.project.datasets) % len(DATASET_COLOURS)
+        ]
+    
+    def apply_imported_dataset_colour(self, dataset: Dataset) -> None:
+        colour = self.next_imported_dataset_colour()
+
+        dataset.display_color = colour
+
+        for curve in dataset.curves:
+            curve.style.color = colour
 
     def export_figure(self) -> None:
         path, _ = QFileDialog.getSaveFileName(

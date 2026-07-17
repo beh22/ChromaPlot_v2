@@ -13,9 +13,11 @@
 - Updated the Curve tab to display the parent dataset name
 - Updated the Dataset tab so it remains populated when a curve within that dataset is selected
 - Improved tick-spacing controls with safer minimum spacing and Auto reset buttons
+- Updated automatic curve styling so curves are coloured by dataset rather than curve type, with line styles used to distinguish different curve types
 
 ### Fixed
 - Prevented excessive tick generation from very small manual tick-spacing values
+- Fixed the syncing between the visible curve checkboxes in the Dataset tree and Curve tab
 
 
 ## Version 2.0.2 - 2026-05-26

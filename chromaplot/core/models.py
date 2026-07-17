@@ -384,9 +384,11 @@ class Dataset:
     curves: list[Curve] = field(default_factory=list)
     id: str = field(default_factory=lambda: new_id("dataset"))
     source: DataSource | None = None
+    display_color: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     fractions: list[Fraction] = field(default_factory=list)
     fraction_label_settings: FractionLabelSettings = field(default_factory=FractionLabelSettings)
+
 
     def add_curve(self, curve: Curve) -> None:
         self.curves.append(curve)
