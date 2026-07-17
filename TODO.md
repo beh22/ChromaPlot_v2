@@ -8,9 +8,6 @@
 - Add links/documentation/help access
 
 ### Main Window
-- Decide whether settings panel should become a separate floating dialog instead of a dock widget
-- Save and restore window geometry/layout in project files
-- Decide whether window/layout changes should mark project as dirty
 - Improve stylesheet/theme across the application
 - Add Help menu/documentation access
 

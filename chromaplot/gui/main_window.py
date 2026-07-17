@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QByteArray, QTimer
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import (
     QAction,
@@ -35,6 +35,8 @@ from .fraction_settings_dialog import FractionSettingsDialog
 from .shaded_region_dialog import ShadedRegionDialog
 from .shading_settings_panel import ShadingSettingsPanel
 
+
+MAIN_WINDOW_STATE_VERSION = 1
 
 class MainWindow(QMainWindow):
     """Minimal ChromaPlot v2 main window using dock widgets."""
@@ -314,6 +316,55 @@ class MainWindow(QMainWindow):
         if response == QMessageBox.Discard:
             return True
         return False
+    
+    def save_project_ui_state(self) -> None:
+        geometry = self.saveGeometry()
+        state = self.saveState(MAIN_WINDOW_STATE_VERSION)
+
+        self.project.metadata["main_window_geometry"] = (
+            bytes(geometry.toBase64()).decode("ascii")
+        )
+
+        self.project.metadata["main_window_state"] = (
+            bytes(state.toBase64()).decode("ascii")
+        )
+
+        self.project.metadata["settings_tab_index"] = (
+            self.settings_tabs.currentIndex()
+        )
+
+    def restore_project_ui_state(self) -> None:
+        geometry_text = self.project.metadata.get("main_window_geometry")
+        state_text = self.project.metadata.get("main_window_state")
+
+        if isinstance(geometry_text, str) and geometry_text:
+            geometry = QByteArray.fromBase64(
+                geometry_text.encode("ascii")
+            )
+
+            geometry_restored = self.restoreGeometry(geometry)
+
+            if not geometry_restored:
+                print("Warning: main-window geometry could not be restored")
+
+        if isinstance(state_text, str) and state_text:
+            state = QByteArray.fromBase64(
+                state_text.encode("ascii")
+            )
+
+            state_restored = self.restoreState(
+                state,
+                MAIN_WINDOW_STATE_VERSION,
+            )
+
+            if not state_restored:
+                print("Warning: main-window dock state could not be restored")
+
+        tab_index = self.project.metadata.get("settings_tab_index")
+
+        if isinstance(tab_index, int):
+            if 0 <= tab_index < self.settings_tabs.count():
+                self.settings_tabs.setCurrentIndex(tab_index)
 
     # ------------------------------------------------------------------
     # File actions
@@ -344,8 +395,8 @@ class MainWindow(QMainWindow):
         try:
             self.project = load_project(path)
             self.project_path = Path(path)
-            self.project_name = self.project_path
             self.refresh_ui_from_project()
+            QTimer.singleShot(50, self.restore_project_ui_state)
             self.mark_clean()
             self.statusBar().showMessage(f"Opened project: {path}", 5000)
         except Exception as exc:
@@ -356,10 +407,12 @@ class MainWindow(QMainWindow):
             return self.save_project_as()
 
         try:
+            self.save_project_ui_state()
             save_project(self.project, self.project_path)
             self.mark_clean()
             self.statusBar().showMessage(f"Saved project: {self.project_path}", 5000)
             return True
+        
         except Exception as exc:
             QMessageBox.critical(self, "Save project failed", str(exc))
             return False
@@ -375,17 +428,20 @@ class MainWindow(QMainWindow):
             return False
 
         try:
-            save_project(self.project, path)
+            project_path = Path(path)
 
-            self.project_path = Path(path)
-            if self.project_path.suffix != ".chromaplot":
-                self.project_path = self.project_path.with_suffix(".chromaplot")
+            if project_path.suffix != ".chromaplot":
+                project_path = project_path.with_suffix(".chromaplot")
 
-            self.project_name = self.project_path
+            self.project_path = project_path
+
+            self.save_project_ui_state()
+            save_project(self.project, self.project_path)
 
             self.mark_clean()
             self.statusBar().showMessage(f"Saved project: {self.project_path}", 5000)
             return True
+        
         except Exception as exc:
             QMessageBox.critical(self, "Save project failed", str(exc))
             return False

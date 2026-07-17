@@ -1,23 +1,24 @@
 # Changelog
 
-## Version 2.1.0 - 2026-XX-XX
+## Version 2.1.0 - 2026-07-17
 
 ### Added
 - Added configurable fraction labels for imported datasets, including sequential numbering, filtering options, and custom line and text styling
-- Added shaded regions linked to individual curves, with support for volume ranges, fraction ranges, and interactive click-drag selection
+- Added shaded regions linked to individual curves, with support for volume ranges, fraction ranges, and interactive click-and-drag selection
 - Added a Shading tab for viewing, editing, hiding, and removing shaded regions across the project
 - Added project-wide controls to show or hide all curves
-- Added persistent window positioning for fraction and shaded-region dialogs
+- Added persistent window positions for the Fraction and Shaded Region dialogs
+- Projects now preserve the main window geometry, dock layout, and active settings tab when saved and reopened
 
 ### Changed
 - Updated the Curve tab to display the parent dataset name
-- Updated the Dataset tab so it remains populated when a curve within that dataset is selected
-- Improved tick-spacing controls with safer minimum spacing and Auto reset buttons
-- Updated automatic curve styling so curves are coloured by dataset rather than curve type, with line styles used to distinguish different curve types
+- Updated the Dataset tab to remain populated when a curve from that dataset is selected
+- Improved tick-spacing controls with safer minimum values and Auto reset buttons
+- Updated automatic curve styling so curves are coloured by dataset rather than by curve type, with line styles distinguishing different curve types
 
 ### Fixed
-- Prevented excessive tick generation from very small manual tick-spacing values
-- Fixed the syncing between the visible curve checkboxes in the Dataset tree and Curve tab
+- Prevented excessive tick generation caused by very small manual tick-spacing values
+- Fixed synchronisation between the visible-curve checkboxes in the Dataset tree and the Curve tab
 
 
 ## Version 2.0.2 - 2026-05-26
