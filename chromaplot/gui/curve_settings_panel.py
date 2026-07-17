@@ -213,6 +213,17 @@ class CurveSettingsPanel(QWidget):
 
         self._updating = False
 
+    def refresh_visibility(self, curve_id: str, visible: bool) -> None:
+        if self.curve is None or self.curve.id != curve_id:
+            return
+        
+        self._updating = True
+
+        try:
+            self.visible_check.setChecked(visible)
+        finally:
+            self._updating = False
+
     # ------------------------------------------------------------------
     # Internal update methods
     # ------------------------------------------------------------------

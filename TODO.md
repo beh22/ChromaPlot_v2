@@ -1,6 +1,5 @@
 # ChromaPlot v2 TODO
 
-- fix 'visible' button in curve tab to sync with box in dataset tree
 - fix dataset tree refresh, re-expands
 
 - preserve tree expand state in datasets/curve and shading

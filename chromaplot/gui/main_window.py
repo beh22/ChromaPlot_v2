@@ -451,6 +451,11 @@ class MainWindow(QMainWindow):
 
         curve.visible = visible
 
+        self.curve_settings_panel.refresh_visibility(
+            curve_id,
+            visible,
+        )
+
         current_dataset = self.dataset_settings_panel.dataset
         if current_dataset is not None:
             self.dataset_settings_panel.set_dataset(current_dataset)
