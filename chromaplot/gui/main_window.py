@@ -34,6 +34,7 @@ from .dataset_settings_panel import DatasetSettingsPanel
 from .fraction_settings_dialog import FractionSettingsDialog
 from .shaded_region_dialog import ShadedRegionDialog
 from .shading_settings_panel import ShadingSettingsPanel
+from .vertical_marker_window import VerticalMarkerWindow
 
 
 MAIN_WINDOW_STATE_VERSION = 1
@@ -55,6 +56,7 @@ class MainWindow(QMainWindow):
         self.dataset_tree.setMinimumWidth(240)
 
         self.plot_canvas = PlotCanvas()
+        self.vertical_marker_window = VerticalMarkerWindow(self)
 
         self.dataset_settings_panel = DatasetSettingsPanel()
         self.curve_settings_panel = CurveSettingsPanel()
@@ -185,6 +187,19 @@ class MainWindow(QMainWindow):
         self.toggle_settings_dock_action.setShortcut("Ctrl+2")
         view_menu.addAction(self.toggle_settings_dock_action)
 
+        view_menu.addSeparator()
+
+        self.vertical_marker_action = QAction(
+            "Vertical Marker",
+            self,
+            checkable=True,
+        )
+        self.vertical_marker_action.setShortcut("Ctrl+M")
+        self.vertical_marker_action.toggled.connect(
+            self.toggle_vertical_marker
+        )
+        view_menu.addAction(self.vertical_marker_action)
+
     def _connect_signals(self) -> None:
         self.dataset_tree.curve_visibility_changed.connect(self.set_curve_visibility)
         self.dataset_tree.curve_selected.connect(self.on_curve_selected)
@@ -226,6 +241,18 @@ class MainWindow(QMainWindow):
             self.set_annotation_visibility
         )
 
+        self.plot_canvas.vertical_marker_moved.connect(
+            self.on_vertical_marker_moved
+        )
+
+        self.vertical_marker_window.position_changed.connect(
+            self.on_vertical_marker_position_changed
+        )
+
+        self.vertical_marker_window.close_requested.connect(
+            self.on_vertical_marker_window_closed
+        )
+
     def _build_status_bar(self) -> None:
         self.status_label = QLabel("")
         status = QStatusBar()
@@ -253,16 +280,50 @@ class MainWindow(QMainWindow):
             self.plot_canvas.ax.get_ylim(),
         )
 
+        marker = self.project.vertical_marker()
+
+        marker_visible = (
+            marker is not None
+            and marker.visible
+        )
+
+        self.vertical_marker_action.blockSignals(True)
+        self.vertical_marker_action.setChecked(
+            marker_visible
+        )
+        self.vertical_marker_action.blockSignals(False)
+
+        if marker_visible:
+            self.vertical_marker_window.set_project(
+                self.project
+            )
+
+            self.vertical_marker_window.set_position_range(
+                *self.plot_canvas.ax.get_xlim()
+            )
+
+            self.vertical_marker_window.refresh()
+            self.vertical_marker_window.show()
+
+        else:
+            self.vertical_marker_window.hide()
+
         self.update_status_summary()
         self.update_window_title()
 
     def redraw_plot(self) -> None:
         self.plot_canvas.redraw()
 
-        self.plot_settings_panel.set_current_axis_limits(
-            self.plot_canvas.ax.get_xlim(),
-            self.plot_canvas.ax.get_ylim(),
-        )
+        xlim = self.plot_canvas.ax.get_xlim()
+        ylim = self.plot_canvas.ax.get_ylim()
+
+        self.plot_settings_panel.set_current_axis_limits(xlim, ylim)
+
+        if self.vertical_marker_action.isChecked():
+            self.vertical_marker_window.set_position_range(
+                *xlim
+            )
+            self.vertical_marker_window.refresh()
 
         self.update_status_summary()
 
@@ -965,3 +1026,80 @@ class MainWindow(QMainWindow):
         dialog.rejected.connect(cancel_dialog)
 
         dialog.show()
+
+    # ------------------------------------------------------------------
+    # Vertical markers
+    # ------------------------------------------------------------------
+
+    def toggle_vertical_marker(self, checked: bool) -> None:
+        marker = self.project.vertical_marker()
+
+        if checked:
+            if marker is None:
+                xlim = self.plot_canvas.ax.get_xlim()
+                x = (xlim[0] + xlim[1]) / 2
+
+                marker = Annotation(
+                    type="vertical_marker",
+                    visible=True,
+                    data={
+                        "x": x,
+                        "include_in_export": False,
+                    },
+                    style={
+                        "color": "#444444",
+                        "linewidth": 1.0,
+                        "linestyle": "--",
+                        "alpha": 1.0,
+                    },
+                )
+
+                self.project.add_annotation(marker)
+
+            else:
+                marker.visible = True
+
+            self.redraw_plot()
+
+            xlim = self.plot_canvas.ax.get_xlim()
+
+            self.vertical_marker_window.set_project(
+                self.project
+            )
+
+            self.vertical_marker_window.set_position_range(
+                *xlim
+            )
+
+            self.vertical_marker_window.refresh()
+
+            self.vertical_marker_window.show()
+            self.vertical_marker_window.raise_()
+            self.vertical_marker_window.activateWindow()
+
+            self.plot_canvas.setFocus()
+
+        else:
+            if marker is not None:
+                marker.visible = False
+
+            self.vertical_marker_window.hide()
+
+            self.redraw_plot()
+
+        self.mark_dirty()
+
+    def on_vertical_marker_moved(self, x: float) -> None:
+        self.vertical_marker_window.set_position(x)
+        self.mark_dirty()
+
+    def on_vertical_marker_position_changed(
+        self,
+        x: float,
+    ) -> None:
+        self.plot_canvas.move_vertical_marker(x)
+
+
+    def on_vertical_marker_window_closed(self) -> None:
+        if self.vertical_marker_action.isChecked():
+            self.vertical_marker_action.setChecked(False)

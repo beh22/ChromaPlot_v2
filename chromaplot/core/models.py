@@ -582,6 +582,17 @@ class Project:
             for ann in self.shaded_regions()
             if ann.data.get("curve_id") == curve_id
         ]
+
+    def vertical_markers(self) -> list[Annotation]:
+        return [
+            ann
+            for ann in self.annotations
+            if ann.type == "vertical_marker"
+        ]
+
+    def vertical_marker(self) -> Annotation | None:
+        markers = self.vertical_markers()
+        return markers[0] if markers else None
     
     def get_annotation(self, annotation_id: str) -> Annotation | None:
         for annotation in self.annotations:

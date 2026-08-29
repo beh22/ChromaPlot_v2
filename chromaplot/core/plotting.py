@@ -506,6 +506,8 @@ def plot_annotations(ax: Axes, project: Project) -> None:
 
         if annotation.type == "shaded_region":
             plot_shaded_region(ax, annotation, project)
+        elif annotation.type == "vertical_marker":
+            plot_vertical_marker(ax, annotation)
 
 def plot_shaded_region(
     ax: Axes,
@@ -546,3 +548,72 @@ def plot_shaded_region(
         alpha=float(style.get("alpha", 0.25)),
         zorder=0,
     )
+
+
+# -----------------------------------------------------------------------------
+# Vertical markers
+# -----------------------------------------------------------------------------
+
+def curve_value_at_x(
+    curve: Curve,
+    x_value: float,
+) -> float | None:
+    """
+    Return the interpolated display y-value of a curve at x_value.
+
+    Returns None when x_value lies outside the curve's finite data range
+    or when there is insufficient data for interpolation.
+    """
+    x, y = curve.display_arrays()
+
+    finite = np.isfinite(x) & np.isfinite(y)
+    x = x[finite]
+    y = y[finite]
+
+    if len(x) < 2:
+        return None
+
+    # Sort because np.interp expects increasing x values.
+    order = np.argsort(x)
+    x = x[order]
+    y = y[order]
+
+    if x_value < x[0] or x_value > x[-1]:
+        return None
+
+    return float(np.interp(x_value, x, y))
+
+def vertical_marker_values(
+    project: Project,
+    x_value: float,
+) -> list[tuple[Dataset, Curve, float | None]]:
+    """
+    Return interpolated values at x_value for every visible curve.
+    """
+    values = []
+
+    for dataset, curve in iter_visible_curves(project):
+        value = curve_value_at_x(curve, x_value)
+        values.append((dataset, curve, value))
+
+    return values
+
+def plot_vertical_marker(ax: Axes, annotation: Annotation) -> None:
+    try:
+        x = float(annotation.data.get("x"))
+    except (TypeError, ValueError):
+        return
+
+    style = annotation.style
+
+    line = ax.axvline(
+        x,
+        color=style.get("color", "#444444"),
+        linewidth=float(style.get("linewidth", 1.0)),
+        linestyle=style.get("linestyle", "--"),
+        alpha=float(style.get("alpha", 1.0)),
+        zorder=float(style.get("zorder", 10)),
+    )
+
+    line.set_gid(f"vertical_marker:{annotation.id}")
+
