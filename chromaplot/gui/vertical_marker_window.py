@@ -55,6 +55,13 @@ class VerticalMarkerWindow(QDialog):
         position_layout = QFormLayout()
         position_layout.addRow(self.position_label, self.position_spin)
 
+        self.keyboard_hint = QLabel(
+            "Use ← / → to move the marker when main window is focused; hold Shift for larger steps."
+        )
+        self.keyboard_hint.setStyleSheet("color: #666666; font-size: 12pt;")
+        self.keyboard_hint.setAlignment(Qt.AlignCenter)
+        self.keyboard_hint.setWordWrap(True)
+
         self.values_table = QTableWidget(0, 3)
         self.values_table.setHorizontalHeaderLabels(
             [
@@ -132,11 +139,16 @@ class VerticalMarkerWindow(QDialog):
 
         self._set_color_preview(self.selected_color)
 
+        self.reset_appearance_button = QPushButton("Reset appearance")
+
+        appearance_form.addRow("", self.reset_appearance_button)
+
         # Start collapsed
         self.appearance_widget.setVisible(False)
 
         layout = QVBoxLayout(self)
         layout.addLayout(position_layout)
+        layout.addWidget(self.keyboard_hint)
         layout.addWidget(self.values_table)
         layout.addWidget(self.appearance_toggle)
         layout.addWidget(self.appearance_widget)
@@ -150,6 +162,7 @@ class VerticalMarkerWindow(QDialog):
         self.linestyle_combo.currentIndexChanged.connect(self.appearance_changed.emit)
         self.alpha_spin.valueChanged.connect(self.appearance_changed.emit)
         self.include_export_check.toggled.connect(self.appearance_changed.emit)
+        self.reset_appearance_button.clicked.connect(self._reset_appearance)
 
         self.resize(420, 300)
 
@@ -386,3 +399,19 @@ class VerticalMarkerWindow(QDialog):
             self.appearance_toggle.setArrowType(Qt.RightArrow)
 
         # self.adjustSize()
+
+    def _reset_appearance(self) -> None:
+        self.selected_color = "#444444"
+        self._set_color_preview(self.selected_color)
+
+        self.linewidth_spin.setValue(1.0)
+
+        index = self.linestyle_combo.findData("--")
+        if index >= 0:
+            self.linestyle_combo.setCurrentIndex(index)
+
+        self.alpha_spin.setValue(1.0)
+
+        self.include_export_check.setChecked(False)
+
+        self.appearance_changed.emit()
