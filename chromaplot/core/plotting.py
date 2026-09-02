@@ -26,6 +26,7 @@ def plot_project(
     *,
     label_mode: LegendLabelMode = "auto",
     autoscale_if_no_limits: bool = True,
+    for_export: bool = False,
 ) -> tuple[Figure, Axes]:
     """
     Plot all visible curves in a ChromaPlot project.
@@ -70,7 +71,7 @@ def plot_project(
             autoscale_limits=autoscale_visible_curves(project) if autoscale_if_no_limits else None,
         )
 
-        plot_annotations(ax, project)
+        plot_annotations(ax, project, for_export=for_export)
 
         for dataset in project.datasets:
             plot_dataset_fractions(ax, dataset)
@@ -499,14 +500,21 @@ def _get_figure_and_axis(settings: PlotSettings, ax: Axes | None = None) -> tupl
 # Annotations
 # -----------------------------------------------------------------------------
 
-def plot_annotations(ax: Axes, project: Project) -> None:
+def plot_annotations(ax: Axes, project: Project, for_export: bool = False) -> None:
     for annotation in project.annotations:
         if not annotation.visible:
             continue
 
         if annotation.type == "shaded_region":
             plot_shaded_region(ax, annotation, project)
+
         elif annotation.type == "vertical_marker":
+            if for_export:
+                if not bool(
+                    annotation.data.get("include_in_export", False)
+                ):
+                    continue
+
             plot_vertical_marker(ax, annotation)
 
 def plot_shaded_region(

@@ -95,7 +95,7 @@ class PlotCanvas(FigureCanvas):
             )
         )
 
-        plot_project(self.project, ax=ax)
+        plot_project(self.project, ax=ax, for_export=True)
         fig.tight_layout()
         fig.savefig(path, dpi=dpi)
         plt.close(fig)

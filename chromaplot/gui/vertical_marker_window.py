@@ -3,14 +3,21 @@ from __future__ import annotations
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
     QAbstractItemView,
+    QCheckBox,
+    QColorDialog,
+    QComboBox,
     QDialog,
     QDoubleSpinBox,
     QFormLayout,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
+    QPushButton,
     QTableWidget,
     QTableWidgetItem,
+    QToolButton,
     QVBoxLayout,
+    QWidget,
 )
 
 from chromaplot.core.models import Project
@@ -24,6 +31,7 @@ class VerticalMarkerWindow(QDialog):
 
     position_changed = pyqtSignal(float)
     close_requested = pyqtSignal()
+    appearance_changed = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -33,6 +41,8 @@ class VerticalMarkerWindow(QDialog):
 
         self.setWindowTitle("Vertical Marker")
         self.setModal(False)
+
+        self.selected_color = "#444444"
 
         self.position_spin = QDoubleSpinBox()
         self.position_spin.setDecimals(4)
@@ -65,11 +75,81 @@ class VerticalMarkerWindow(QDialog):
         header.setSectionResizeMode(1, QHeaderView.Stretch)
         header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
 
+        self.appearance_toggle = QToolButton()
+        self.appearance_toggle.setText("Appearance")
+        self.appearance_toggle.setCheckable(True)
+        self.appearance_toggle.setChecked(False)
+        self.appearance_toggle.setArrowType(Qt.RightArrow)
+        self.appearance_toggle.setToolButtonStyle(
+            Qt.ToolButtonTextBesideIcon
+        )
+
+        self.appearance_widget = QWidget()
+        appearance_form = QFormLayout(self.appearance_widget)
+        appearance_form.setContentsMargins(12, 0, 0, 0)
+
+        color_row = QWidget()
+        color_layout = QHBoxLayout(color_row)
+        color_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.color_button = QPushButton("Choose colour...")
+        self.color_preview = QLabel()
+        self.color_preview.setFixedSize(40, 20)
+
+        color_layout.addWidget(self.color_button)
+        color_layout.addWidget(self.color_preview)
+        color_layout.addStretch()
+
+        appearance_form.addRow("Colour", color_row)
+
+        self.linewidth_spin = QDoubleSpinBox()
+        self.linewidth_spin.setRange(0.1, 10.0)
+        self.linewidth_spin.setDecimals(1)
+        self.linewidth_spin.setSingleStep(0.1)
+        self.linewidth_spin.setValue(1.0)
+
+        appearance_form.addRow("Line width", self.linewidth_spin)
+
+        self.linestyle_combo = QComboBox()
+        self.linestyle_combo.addItem("Solid", "-")
+        self.linestyle_combo.addItem("Dashed", "--")
+        self.linestyle_combo.addItem("Dotted", ":")
+        self.linestyle_combo.addItem("Dash-dot", "-.")
+
+        appearance_form.addRow("Line style", self.linestyle_combo)
+
+        self.alpha_spin = QDoubleSpinBox()
+        self.alpha_spin.setRange(0.0, 1.0)
+        self.alpha_spin.setDecimals(2)
+        self.alpha_spin.setSingleStep(0.05)
+        self.alpha_spin.setValue(1.0)
+
+        appearance_form.addRow("Alpha", self.alpha_spin)
+
+        self.include_export_check = QCheckBox("Include marker in exported figure")
+
+        appearance_form.addRow("", self.include_export_check)
+
+        self._set_color_preview(self.selected_color)
+
+        # Start collapsed
+        self.appearance_widget.setVisible(False)
+
         layout = QVBoxLayout(self)
         layout.addLayout(position_layout)
         layout.addWidget(self.values_table)
+        layout.addWidget(self.appearance_toggle)
+        layout.addWidget(self.appearance_widget)
 
         self.position_spin.valueChanged.connect(self._on_position_changed)
+
+        self.appearance_toggle.toggled.connect(self._toggle_appearance)
+
+        self.color_button.clicked.connect(self._choose_color)
+        self.linewidth_spin.valueChanged.connect(self.appearance_changed.emit)
+        self.linestyle_combo.currentIndexChanged.connect(self.appearance_changed.emit)
+        self.alpha_spin.valueChanged.connect(self.appearance_changed.emit)
+        self.include_export_check.toggled.connect(self.appearance_changed.emit)
 
         self.resize(420, 300)
 
@@ -124,6 +204,7 @@ class VerticalMarkerWindow(QDialog):
             return
 
         self.set_position(x)
+        self._load_marker_appearance(marker)
 
     def refresh_values(self) -> None:
         if self.project is None:
@@ -166,11 +247,19 @@ class VerticalMarkerWindow(QDialog):
     def showEvent(self, event) -> None:
         super().showEvent(event)
 
+        self._restore_geometry_and_collapse
+
+    def _restore_geometry_and_collapse(self) -> None:
         restore_dialog_geometry(
             self,
             "vertical_marker",
         )
 
+        self.appearance_toggle.setChecked(False)
+        self.appearance_widget.setVisible(False)
+        self.appearance_toggle.setArrowType(Qt.RightArrow)
+
+        self.adjustSize()
 
     def hideEvent(self, event) -> None:
         save_dialog_geometry(
@@ -180,7 +269,6 @@ class VerticalMarkerWindow(QDialog):
 
         super().hideEvent(event)
 
-
     def closeEvent(self, event) -> None:
         save_dialog_geometry(
             self,
@@ -189,3 +277,112 @@ class VerticalMarkerWindow(QDialog):
 
         self.close_requested.emit()
         super().closeEvent(event)
+
+    def _set_color_preview(self, color: str) -> None:
+        self.color_preview.setStyleSheet(
+            f"background-color: {color}; border: 1px solid #666666;"
+        )
+
+    def _choose_color(self) -> None:
+        color = QColorDialog.getColor(parent=self)
+
+        if not color.isValid():
+            return
+
+        self.selected_color = color.name()
+        self._set_color_preview(self.selected_color)
+
+        self.appearance_changed.emit()
+
+    def _load_marker_appearance(
+        self,
+        marker,
+    ) -> None:
+        self.selected_color = str(
+            marker.style.get(
+                "color",
+                "#444444",
+            )
+        )
+
+        self._set_color_preview(
+            self.selected_color
+        )
+
+        self.linewidth_spin.blockSignals(True)
+        self.linestyle_combo.blockSignals(True)
+        self.alpha_spin.blockSignals(True)
+        self.include_export_check.blockSignals(True)
+
+        try:
+            self.linewidth_spin.setValue(
+                float(
+                    marker.style.get(
+                        "linewidth",
+                        1.0,
+                    )
+                )
+            )
+
+            linestyle = str(
+                marker.style.get(
+                    "linestyle",
+                    "--",
+                )
+            )
+
+            index = self.linestyle_combo.findData(
+                linestyle
+            )
+
+            if index >= 0:
+                self.linestyle_combo.setCurrentIndex(
+                    index
+                )
+
+            self.alpha_spin.setValue(
+                float(
+                    marker.style.get(
+                        "alpha",
+                        1.0,
+                    )
+                )
+            )
+
+            self.include_export_check.setChecked(
+                bool(
+                    marker.data.get(
+                        "include_in_export",
+                        False,
+                    )
+                )
+            )
+
+        finally:
+            self.linewidth_spin.blockSignals(False)
+            self.linestyle_combo.blockSignals(False)
+            self.alpha_spin.blockSignals(False)
+            self.include_export_check.blockSignals(False)
+
+    def appearance_data(self) -> dict:
+        return {
+            "color": self.selected_color,
+            "linewidth": float(self.linewidth_spin.value()),
+            "linestyle": str(
+                self.linestyle_combo.currentData()
+            ),
+            "alpha": float(self.alpha_spin.value()),
+            "include_in_export": bool(
+                self.include_export_check.isChecked()
+            ),
+        }
+
+    def _toggle_appearance(self, expanded: bool) -> None:
+        self.appearance_widget.setVisible(expanded)
+
+        if expanded:
+            self.appearance_toggle.setArrowType(Qt.DownArrow)
+        else:
+            self.appearance_toggle.setArrowType(Qt.RightArrow)
+
+        # self.adjustSize()

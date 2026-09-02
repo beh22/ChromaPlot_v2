@@ -229,29 +229,14 @@ class MainWindow(QMainWindow):
 
         self.curve_settings_panel.add_shaded_region_requested.connect(self.add_shaded_region_for_curve)
 
-        self.shading_settings_panel.edit_region_requested.connect(
-            self.edit_shaded_region
-        )
+        self.shading_settings_panel.edit_region_requested.connect(self.edit_shaded_region)
+        self.shading_settings_panel.remove_region_requested.connect(self.remove_shaded_region)
+        self.shading_settings_panel.visibility_changed.connect(self.set_annotation_visibility)
 
-        self.shading_settings_panel.remove_region_requested.connect(
-            self.remove_shaded_region
-        )
-
-        self.shading_settings_panel.visibility_changed.connect(
-            self.set_annotation_visibility
-        )
-
-        self.plot_canvas.vertical_marker_moved.connect(
-            self.on_vertical_marker_moved
-        )
-
-        self.vertical_marker_window.position_changed.connect(
-            self.on_vertical_marker_position_changed
-        )
-
-        self.vertical_marker_window.close_requested.connect(
-            self.on_vertical_marker_window_closed
-        )
+        self.plot_canvas.vertical_marker_moved.connect(self.on_vertical_marker_moved)
+        self.vertical_marker_window.position_changed.connect(self.on_vertical_marker_position_changed)
+        self.vertical_marker_window.close_requested.connect(self.on_vertical_marker_window_closed)
+        self.vertical_marker_window.appearance_changed.connect(self.on_vertical_marker_appearance_changed)
 
     def _build_status_bar(self) -> None:
         self.status_label = QLabel("")
@@ -1099,7 +1084,28 @@ class MainWindow(QMainWindow):
     ) -> None:
         self.plot_canvas.move_vertical_marker(x)
 
-
     def on_vertical_marker_window_closed(self) -> None:
         if self.vertical_marker_action.isChecked():
             self.vertical_marker_action.setChecked(False)
+
+    def on_vertical_marker_appearance_changed(self) -> None:
+        marker = self.project.vertical_marker()
+
+        if marker is None:
+            return
+
+        appearance = self.vertical_marker_window.appearance_data()
+
+        marker.style.update(
+            {
+                "color": appearance["color"],
+                "linewidth": appearance["linewidth"],
+                "linestyle": appearance["linestyle"],
+                "alpha": appearance["alpha"],
+            }
+        )
+
+        marker.data["include_in_export"] = appearance["include_in_export"]
+
+        self.redraw_plot()
+        self.mark_dirty()
