@@ -78,6 +78,7 @@ class VerticalMarkerWindow(QDialog):
 
         self.project: Project | None = None
         self._updating_position = False
+        self._displayed_table_signature = []
 
         self.setWindowTitle("Vertical Marker")
         self.setModal(False)
@@ -279,12 +280,25 @@ class VerticalMarkerWindow(QDialog):
 
         values = vertical_marker_values(self.project, x)
 
-        self.values_table.setRowCount(len(values))
+        table_signature = [
+            (
+                dataset.id,
+                dataset.name,
+                curve.id,
+                curve.name,
+                curve.style.color,
+                float(curve.style.linewidth),
+                str(curve.style.linestyle),
+                curve.y_unit,
+            )
+            for dataset, curve, _ in values
+        ]
 
-        for row, (dataset, curve, value) in enumerate(values):
-            dataset_item = QTableWidgetItem(dataset.name)
-            curve_item = QTableWidgetItem(curve.name)
+        if table_signature != getattr(self, "_displayed_table_signature", []):
+            self._rebuild_values_table(values)
+            self._displayed_table_signature = table_signature
 
+        for row, (_, curve, value) in enumerate(values):
             if value is None:
                 value_text = "—"
             else:
@@ -293,18 +307,41 @@ class VerticalMarkerWindow(QDialog):
                 if curve.y_unit:
                     value_text += f" {curve.y_unit}"
 
-            value_item = QTableWidgetItem(value_text)
-            value_item.setTextAlignment(
-                Qt.AlignRight | Qt.AlignVCenter
-            )
+            value_item = self.values_table.item(row, 3)
 
-            self.values_table.setItem(row, 0, dataset_item)
-            self.values_table.setItem(row, 1, curve_item)
+            if value_item is None:
+                value_item = QTableWidgetItem()
 
-            style_sample = CurveStyleSample(curve, self.values_table)
-            self.values_table.setCellWidget(row, 2, style_sample)
+                value_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
 
-            self.values_table.setItem(row, 3, value_item)
+                self.values_table.setItem(row, 3, value_item)
+
+            value_item.setText(value_text)
+
+    def _rebuild_values_table(self, values) -> None:
+        self.values_table.setUpdatesEnabled(False)
+
+        try:
+            self.values_table.setRowCount(len(values))
+
+            for row, (dataset, curve, value) in enumerate(values):
+
+                dataset_item = QTableWidgetItem(dataset.name)
+                curve_item = QTableWidgetItem(curve.name)
+
+                value_item = QTableWidgetItem()
+                value_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+                self.values_table.setItem(row, 0, dataset_item)
+                self.values_table.setItem(row, 1, curve_item)
+
+                style_sample = CurveStyleSample(curve, self.values_table)
+                self.values_table.setCellWidget(row, 2, style_sample)
+
+                self.values_table.setItem(row, 3, value_item)
+
+        finally:
+            self.values_table.setUpdatesEnabled(True)
 
     def _on_position_changed(self, value: float) -> None:
         if self._updating_position:
@@ -315,7 +352,7 @@ class VerticalMarkerWindow(QDialog):
     def showEvent(self, event) -> None:
         super().showEvent(event)
 
-        self._restore_geometry_and_collapse
+        self._restore_geometry_and_collapse()
 
     def _restore_geometry_and_collapse(self) -> None:
         restore_dialog_geometry(
@@ -438,5 +475,4 @@ class VerticalMarkerWindow(QDialog):
         self.alpha_spin.setValue(1.0)
 
         self.include_export_check.setChecked(False)
-
-        self.appearance_changed.emit()
+        
