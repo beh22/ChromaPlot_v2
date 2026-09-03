@@ -19,11 +19,51 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PyQt5.QtGui import QColor, QPainter, QPen
 
 from chromaplot.core.models import Project
 from chromaplot.core.plotting import vertical_marker_values
 
 from .dialog_geometry import restore_dialog_geometry, save_dialog_geometry
+
+class CurveStyleSample(QWidget):
+    def __init__(self, curve, parent=None):
+        super().__init__(parent)
+
+        self.curve = curve
+
+        self.setFixedSize(56, 24)
+        self.setStyleSheet("background-color: white;")
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+
+        painter.fillRect(self.rect(), QColor("white"))
+
+        style = self.curve.style
+
+        pen = QPen(QColor(style.color))
+
+        pen.setWidthF(max(0.5, float(style.linewidth)))
+
+        linestyle = str(style.linestyle)
+
+        if linestyle == "--":
+            pen.setStyle(Qt.DashLine)
+        elif linestyle == ":":
+            pen.setStyle(Qt.DotLine)
+        elif linestyle == "-.":
+            pen.setStyle(Qt.DashDotLine)
+        else:
+            pen.setStyle(Qt.SolidLine)
+
+        painter.setPen(pen)
+
+        y = self.height() // 2
+
+        painter.drawLine(6, y, self.width() - 6, y)
+
+        painter.end()
 
 
 class VerticalMarkerWindow(QDialog):
@@ -62,11 +102,12 @@ class VerticalMarkerWindow(QDialog):
         self.keyboard_hint.setAlignment(Qt.AlignCenter)
         self.keyboard_hint.setWordWrap(True)
 
-        self.values_table = QTableWidget(0, 3)
+        self.values_table = QTableWidget(0, 4)
         self.values_table.setHorizontalHeaderLabels(
             [
                 "Dataset",
                 "Curve",
+                "",
                 "Value",
             ]
         )
@@ -80,7 +121,10 @@ class VerticalMarkerWindow(QDialog):
         header = self.values_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.Stretch)
-        header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.Fixed)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+
+        self.values_table.setColumnWidth(2, 60)
 
         self.appearance_toggle = QToolButton()
         self.appearance_toggle.setText("Appearance")
@@ -211,6 +255,13 @@ class VerticalMarkerWindow(QDialog):
             self.values_table.setRowCount(0)
             return
 
+        x_label = self.project.plot_settings.x_label.strip()
+
+        if x_label:
+            self.position_label.setText(x_label)
+        else:
+            self.position_label.setText("Position")
+
         try:
             x = float(marker.data["x"])
         except (KeyError, TypeError, ValueError):
@@ -249,7 +300,11 @@ class VerticalMarkerWindow(QDialog):
 
             self.values_table.setItem(row, 0, dataset_item)
             self.values_table.setItem(row, 1, curve_item)
-            self.values_table.setItem(row, 2, value_item)
+
+            style_sample = CurveStyleSample(curve, self.values_table)
+            self.values_table.setCellWidget(row, 2, style_sample)
+
+            self.values_table.setItem(row, 3, value_item)
 
     def _on_position_changed(self, value: float) -> None:
         if self._updating_position:
@@ -328,48 +383,18 @@ class VerticalMarkerWindow(QDialog):
         self.include_export_check.blockSignals(True)
 
         try:
-            self.linewidth_spin.setValue(
-                float(
-                    marker.style.get(
-                        "linewidth",
-                        1.0,
-                    )
-                )
-            )
+            self.linewidth_spin.setValue(float(marker.style.get("linewidth", 1.0)))
 
-            linestyle = str(
-                marker.style.get(
-                    "linestyle",
-                    "--",
-                )
-            )
+            linestyle = str(marker.style.get("linestyle","--"))
 
-            index = self.linestyle_combo.findData(
-                linestyle
-            )
+            index = self.linestyle_combo.findData(linestyle)
 
             if index >= 0:
-                self.linestyle_combo.setCurrentIndex(
-                    index
-                )
+                self.linestyle_combo.setCurrentIndex(index)
 
-            self.alpha_spin.setValue(
-                float(
-                    marker.style.get(
-                        "alpha",
-                        1.0,
-                    )
-                )
-            )
+            self.alpha_spin.setValue(float(marker.style.get("alpha", 1.0)))
 
-            self.include_export_check.setChecked(
-                bool(
-                    marker.data.get(
-                        "include_in_export",
-                        False,
-                    )
-                )
-            )
+            self.include_export_check.setChecked(bool(marker.data.get("include_in_export", False)))
 
         finally:
             self.linewidth_spin.blockSignals(False)
