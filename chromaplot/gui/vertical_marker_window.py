@@ -211,8 +211,6 @@ class VerticalMarkerWindow(QDialog):
 
         self.resize(420, 300)
 
-        restore_dialog_geometry(self, "vertical_marker")
-
     def set_project(self, project: Project) -> None:
         self.project = project
         self.refresh()
@@ -363,8 +361,6 @@ class VerticalMarkerWindow(QDialog):
         self.appearance_toggle.setChecked(False)
         self.appearance_widget.setVisible(False)
         self.appearance_toggle.setArrowType(Qt.RightArrow)
-
-        self.adjustSize()
 
     def hideEvent(self, event) -> None:
         save_dialog_geometry(

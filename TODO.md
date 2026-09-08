@@ -4,7 +4,6 @@
 
 ### Welcome Dialog
 - Add About dialog
-- Improve styling/theme consistency
 - Add links/documentation/help access
 
 ### Main Window
@@ -21,13 +20,10 @@
 ## Plotting Features
 
 ### Annotations and Regions
-- Vertical marker
-  - Right click on plot for menu to turn on vertical marker
-  - Also appears in 'view' menu with keyboard shortcut
-  - Activating it opens a small window which contains the y values at the volume for each curve visible on the plot
-  - Can also customise marker appearance (if the user wants to have it present when exporting)
-  - Have a box to automatically move the marker to a specific volume
-  - Move it around by dragging on the plot? other option is slider on pop out window like in v1
+- Additional vertical marker
+ - Some analytical features
+ - Multiple markers
+ - Reference point with delta, mean, min, max
 
 - Text annotations
 
