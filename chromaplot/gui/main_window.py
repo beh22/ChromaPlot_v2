@@ -673,6 +673,18 @@ class MainWindow(QMainWindow):
                 self.project.plot_settings.secondary_y_axis.enabled = True
                 self.project.plot_settings.tertiary_y_axis.enabled = True
 
+        self.secondary_y_axis_action.blockSignals(True)
+        self.secondary_y_axis_action.setChecked(
+            self.project.plot_settings.secondary_y_axis.enabled
+        )
+        self.secondary_y_axis_action.blockSignals(False)
+
+        self.tertiary_y_axis_action.blockSignals(True)
+        self.tertiary_y_axis_action.setChecked(
+            self.project.plot_settings.tertiary_y_axis.enabled
+        )
+        self.tertiary_y_axis_action.blockSignals(False)
+
         self.plot_settings_panel.set_plot_settings(self.project.plot_settings)
 
         self.dataset_tree.set_project(self.project)

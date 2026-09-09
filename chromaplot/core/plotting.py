@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from contextlib import nullcontext
 from typing import Literal
 
@@ -10,7 +11,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.ticker import MultipleLocator
 
-from .models import Annotation, Curve, Dataset, Project, PlotSettings
+from .models import Annotation, Curve, Dataset, Project, PlotSettings, YAxisSettings
 
 
 LegendLabelMode = Literal["auto", "curve", "dataset", "dataset_curve"]
@@ -19,6 +20,41 @@ LegendLabelMode = Literal["auto", "curve", "dataset", "dataset_curve"]
 # -----------------------------------------------------------------------------
 # Public plotting API
 # -----------------------------------------------------------------------------
+
+@dataclass
+class PlotAxes:
+    primary: Axes
+    secondary: Axes | None = None
+    tertiary: Axes | None = None
+
+    def for_curve(self, curve: Curve) -> Axes:
+        if curve.y_axis == "secondary" and self.secondary is not None:
+            return self.secondary
+
+        if curve.y_axis == "tertiary" and self.tertiary is not None:
+            return self.tertiary
+
+        return self.primary
+
+def create_plot_axes(
+    ax: Axes,
+    settings: PlotSettings,
+) -> PlotAxes:
+    secondary = None
+    tertiary = None
+
+    if settings.secondary_y_axis.enabled:
+        secondary = ax.twinx()
+
+    if settings.tertiary_y_axis.enabled:
+        tertiary = ax.twinx()
+        tertiary.spines["right"].set_position(("axes", 1.15)) # or ("outward", 60) for fixed distance?
+
+    return PlotAxes(
+        primary=ax,
+        secondary=secondary,
+        tertiary=tertiary,
+    )
 
 def plot_project(
     project: Project,
@@ -55,6 +91,8 @@ def plot_project(
     """
     fig, ax = _get_figure_and_axis(project.plot_settings, ax=ax)
 
+    axes = create_plot_axes(ax, project.plot_settings)
+
     visible_items = list(iter_visible_curves(project))
 
     style_context = plt.xkcd() if project.plot_settings.plot_xkcd else nullcontext()
@@ -62,10 +100,12 @@ def plot_project(
     with style_context:
         for dataset, curve in visible_items:
             label = make_curve_label(project, dataset, curve, mode=project.plot_settings.legend_label_mode)
-            plot_curve(ax, curve, label=label)
+
+            curve_ax = axes.for_curve(curve)
+            plot_curve(curve_ax, curve, label=label)
 
         apply_plot_settings(
-            ax,
+            axes.primary,
             project.plot_settings,
             has_visible_curves=bool(visible_items),
             autoscale_limits=autoscale_visible_curves(project) if autoscale_if_no_limits else None,
