@@ -10,7 +10,7 @@ import numpy as np
 from .styles import CurveStyle, default_curve_style
 from .transforms import CurveTransform
 
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2
 
 AnnotationType = Literal[
     "shaded_region",
@@ -132,6 +132,43 @@ class TickSettings:
             minor_tick_length=float(data.get("minor_tick_length", 3.0)),
         )
 
+YAxisName = Literal[
+    "primary",
+    "secondary",
+    "tertiary",
+]
+
+@dataclass
+class YAxisSettings:
+    enabled: bool = True
+    label: str = ""
+    limits: tuple[float, float] | None = None
+    major_spacing: float | None = None
+    minor_spacing: float | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "label": self.label,
+            "limits": list(self.limits) if self.limits is not None else None,
+            "major_spacing": self.major_spacing,
+            "minor_spacing": self.minor_spacing,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any] | None) -> "YAxisSettings":
+        if data is None:
+            return cls()
+
+        limits = data.get("limits")
+
+        return cls(
+            enabled=bool(data.get("enabled", False)),
+            label=str(data.get("label", "")),
+            limits=tuple(limits) if limits is not None else None,
+            major_spacing=data.get("major_spacing"),
+            minor_spacing=data.get("minor_spacing"),
+        )
 
 @dataclass
 class PlotSettings:
@@ -157,6 +194,9 @@ class PlotSettings:
     clean_plot: bool = False
     plot_xkcd: bool = False
 
+    secondary_y_axis: YAxisSettings = field(default_factory=YAxisSettings)
+    tertiary_y_axis: YAxisSettings = field(default_factory=YAxisSettings)
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "title": self.title,
@@ -178,6 +218,9 @@ class PlotSettings:
             "grid": self.grid,
             "clean_plot": self.clean_plot,
             "plot_xkcd": self.plot_xkcd,
+
+            "secondary_y_axis": self.secondary_y_axis.to_dict(),
+            "tertiary_y_axis": self.tertiary_y_axis.to_dict(),
         }
 
     @classmethod
@@ -208,6 +251,9 @@ class PlotSettings:
             legend_columns=int(data.get("legend_columns", 5)),
             legend_label_mode=str(data.get("legend_label_mode", "auto")),
             plot_xkcd=bool(data.get("plot_xkcd", False)),
+
+            secondary_y_axis=YAxisSettings.from_dict(data.get("secondary_y_axis")),
+            tertiary_y_axis=YAxisSettings.from_dict(data.get("tertiary_y_axis"))
         )
 
 
@@ -307,6 +353,7 @@ class Curve:
     x_unit: str | None = "mL"
     y_unit: str | None = None
     visible: bool = True
+    y_axis: YAxisName = "primary"
     style: CurveStyle = field(default_factory=CurveStyle)
     transform: CurveTransform = field(default_factory=CurveTransform)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -351,6 +398,7 @@ class Curve:
             "x_unit": self.x_unit,
             "y_unit": self.y_unit,
             "visible": self.visible,
+            "y_axis": self.y_axis,
             "style": self.style.to_dict(),
             "transform": self.transform.to_dict(),
             "metadata": self.metadata,
@@ -368,6 +416,14 @@ class Curve:
             x_unit=data.get("x_unit", "mL"),
             y_unit=data.get("y_unit"),
             visible=bool(data.get("visible", True)),
+            # default to primary if y_axis is missing, for backwards compatibility
+            y_axis=(
+                data.get("y_axis")
+                if data.get("y_axis") in {
+                    "primary", "secondary", "tertiary"
+                }
+                else "primary"
+            ),
             style=CurveStyle.from_dict(data.get("style")),
             transform=CurveTransform.from_dict(data.get("transform")),
             metadata=dict(data.get("metadata", {})),
