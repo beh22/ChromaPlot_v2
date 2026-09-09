@@ -140,7 +140,7 @@ YAxisName = Literal[
 
 @dataclass
 class YAxisSettings:
-    enabled: bool = True
+    enabled: bool = False
     label: str = ""
     limits: tuple[float, float] | None = None
     major_spacing: float | None = None

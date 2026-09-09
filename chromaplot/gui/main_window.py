@@ -77,6 +77,7 @@ class MainWindow(QMainWindow):
 
         self._build_layout()
         self._build_actions()
+        self._build_plot_menu()
         self._build_view_menu()
         self._connect_signals()
         self._build_status_bar()
@@ -172,6 +173,30 @@ class MainWindow(QMainWindow):
         self.quit_action.setShortcuts(QKeySequence.Quit)
         self.quit_action.triggered.connect(self.close)
         file_menu.addAction(self.quit_action)
+
+    def _build_plot_menu(self) -> None:
+        """Add plot-specific actions to the menu bar"""
+        plot_menu = self.menuBar().addMenu("Plot")
+
+        self.secondary_y_axis_action = QAction(
+            "Enable Secondary Y Axis",
+            self,
+            checkable=True,
+        )
+        self.secondary_y_axis_action.toggled.connect(
+            self.toggle_secondary_y_axis
+        )
+        plot_menu.addAction(self.secondary_y_axis_action)
+
+        self.tertiary_y_axis_action = QAction(
+            "Enable Tertiary Y Axis",
+            self,
+            checkable=True,
+        )
+        self.tertiary_y_axis_action.toggled.connect(
+            self.toggle_tertiary_y_axis
+        )
+        plot_menu.addAction(self.tertiary_y_axis_action)
 
     def _build_view_menu(self) -> None:
         """Add menu actions for showing/hiding docks."""
@@ -292,6 +317,20 @@ class MainWindow(QMainWindow):
 
         else:
             self.vertical_marker_window.hide()
+
+        settings = self.project.plot_settings
+
+        self.secondary_y_axis_action.blockSignals(True)
+        self.secondary_y_axis_action.setChecked(
+            settings.secondary_y_axis.enabled
+        )
+        self.secondary_y_axis_action.blockSignals(False)
+
+        self.tertiary_y_axis_action.blockSignals(True)
+        self.tertiary_y_axis_action.setChecked(
+            settings.tertiary_y_axis.enabled
+        )
+        self.tertiary_y_axis_action.blockSignals(False)
 
         self.update_status_summary()
         self.update_window_title()
@@ -1117,6 +1156,77 @@ class MainWindow(QMainWindow):
         )
 
         marker.data["include_in_export"] = appearance["include_in_export"]
+
+        self.redraw_plot()
+        self.mark_dirty()
+
+    # ------------------------------------------------------------------
+    # Secondary/Tertiary Y Axes
+    # ------------------------------------------------------------------
+
+    # Currently moving curves back to primary when secondary/tertiary is disabled.
+    # Could consider leaving them on secondary/tertiary and just hiding the axis
+    # or have the option to choose between the two
+
+    def toggle_secondary_y_axis(self, enabled: bool) -> None:
+        settings = self.project.plot_settings
+
+        if not enabled and settings.tertiary_y_axis.enabled:
+            settings.tertiary_y_axis.enabled = False
+
+            self.tertiary_y_axis_action.blockSignals(True)
+            self.tertiary_y_axis_action.setChecked(False)
+            self.tertiary_y_axis_action.blockSignals(False)
+
+        if not enabled:
+            for dataset in self.project.datasets:
+                for curve in dataset.curves:
+                    if curve.y_axis in {
+                        "secondary", "tertiary"
+                    }:
+                        curve.y_axis = "primary"
+
+        settings.secondary_y_axis.enabled = enabled
+
+        self.plot_settings_panel.set_plot_settings(settings)
+
+        if self.curve_settings_panel.curve is not None:
+            self.curve_settings_panel.set_curve(
+                self.curve_settings_panel.curve,
+                self.curve_settings_panel.dataset_name,
+            )
+
+        self.redraw_plot()
+        self.mark_dirty()
+
+    def toggle_tertiary_y_axis(
+        self,
+        enabled: bool,
+    ) -> None:
+        settings = self.project.plot_settings
+
+        if enabled:
+            settings.secondary_y_axis.enabled = True
+
+            self.secondary_y_axis_action.blockSignals(True)
+            self.secondary_y_axis_action.setChecked(True)
+            self.secondary_y_axis_action.blockSignals(False)
+
+        else:
+            for dataset in self.project.datasets:
+                for curve in dataset.curves:
+                    if curve.y_axis == "tertiary":
+                        curve.y_axis = "primary"
+
+        settings.tertiary_y_axis.enabled = enabled
+
+        self.plot_settings_panel.set_plot_settings(settings)
+
+        if self.curve_settings_panel.curve is not None:
+            self.curve_settings_panel.set_curve(
+                self.curve_settings_panel.curve,
+                self.curve_settings_panel.dataset_name,
+            )
 
         self.redraw_plot()
         self.mark_dirty()
