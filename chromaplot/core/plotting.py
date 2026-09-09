@@ -11,7 +11,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.ticker import MultipleLocator
 
-from .models import Annotation, Curve, Dataset, Project, PlotSettings, YAxisSettings
+from .models import Annotation, Curve, Dataset, Project, PlotSettings, YAxisName, YAxisSettings
 
 
 LegendLabelMode = Literal["auto", "curve", "dataset", "dataset_curve"]
@@ -468,6 +468,64 @@ def apply_xkcd_style(ax: Axes) -> None:
 # Autoscaling
 # -----------------------------------------------------------------------------
 
+def autoscale_visible_x(
+    project: Project,
+    *,
+    padding_fraction: float = 0.01
+) -> tuple[float, float] | None:
+    """
+    Calculate shared x-axis limits from all visible curves
+    """
+    x_chunks: list[np.ndarray] = []
+
+    for _, curve in iter_visible_curves(project):
+        x, y = curve.display_arrays()
+
+        mask = np.isfinite(x) & np.isfinite(y)
+
+        if np.any(mask):
+            x_chunks.append(x[mask])
+
+    if not x_chunks:
+        return None
+
+    x_all = np.concatenate(x_chunks)
+
+    xmin, xmax = float(np.min(x_all)), float(np.max(x_all))
+
+    return _pad_limits(xmin, xmax, padding_fraction)
+
+def autoscale_visible_y_axis(
+    project: Project,
+    axis_name: YAxisName,
+    *,
+    padding_fraction: float = 0.03
+) -> tuple[float, float] | None:
+    """
+    Calculate y-axis limits from visible curves assigned to one y axis
+    """
+    y_chunks: list[np.ndarray] = []
+
+    for _, curve in iter_visible_curves(project):
+        if curve.y_axis != axis_name:
+            continue
+
+        x, y = curve.display_arrays()
+
+        mask = np.isfinite(x) & np.isfinite(y)
+
+        if np.any(mask):
+            y_chunks.append(y[mask])
+
+    if not y_chunks:
+        return None
+
+    y_all = np.concatenate(y_chunks)
+
+    ymin, ymax = float(np.min(y_all)), float(np.max(y_all))
+
+    return _pad_limits(ymin, ymax, padding_fraction)
+
 def autoscale_visible_curves(
     project: Project,
     *,
@@ -475,37 +533,16 @@ def autoscale_visible_curves(
     y_padding_fraction: float = 0.03,
 ) -> tuple[tuple[float, float], tuple[float, float]] | None:
     """
-    Calculate axis limits from all visible curves.
-
-    Returns
-    -------
-    ((xmin, xmax), (ymin, ymax)) or None
-        Returns None when there are no visible curves with finite data.
+    Calculate shared x limits and primary y-axis limits
     """
-    x_chunks: list[np.ndarray] = []
-    y_chunks: list[np.ndarray] = []
+    xlim = autoscale_visible_x(project, padding_fraction=x_padding_fraction)
 
-    for _, curve in iter_visible_curves(project):
-        x, y = curve.display_arrays()
-        mask = np.isfinite(x) & np.isfinite(y)
-        if np.any(mask):
-            x_chunks.append(x[mask])
-            y_chunks.append(y[mask])
+    ylim = autoscale_visible_y_axis(project, "primary", padding_fraction=y_padding_fraction)
 
-    if not x_chunks or not y_chunks:
+    if xlim is None or ylim is None:
         return None
 
-    x_all = np.concatenate(x_chunks)
-    y_all = np.concatenate(y_chunks)
-
-    xmin, xmax = float(np.min(x_all)), float(np.max(x_all))
-    ymin, ymax = float(np.min(y_all)), float(np.max(y_all))
-
-    xmin, xmax = _pad_limits(xmin, xmax, x_padding_fraction)
-    ymin, ymax = _pad_limits(ymin, ymax, y_padding_fraction)
-
-    return (xmin, xmax), (ymin, ymax)
-
+    return xlim, ylim
 
 def _pad_limits(vmin: float, vmax: float, padding_fraction: float) -> tuple[float, float]:
     """Pad numeric limits by a fraction of their span."""

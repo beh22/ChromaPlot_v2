@@ -23,7 +23,7 @@ from chromaplot import __version__
 from chromaplot.core.importers import import_dataset
 from chromaplot.core.models import Annotation, Dataset, Project
 from chromaplot.core.project_io import load_project, save_project
-from chromaplot.core.plotting import autoscale_visible_curves
+from chromaplot.core.plotting import autoscale_visible_x, autoscale_visible_y_axis
 from chromaplot.core.styles import DATASET_COLOURS
 
 from .dataset_tree import DatasetTreeWidget
@@ -696,15 +696,28 @@ class MainWindow(QMainWindow):
         self.mark_dirty()
 
     def autoscale_plot(self) -> None:
-        limits = autoscale_visible_curves(self.project)
-        if limits is None:
-            return
+        settings = self.project.plot_settings
 
-        xlim, ylim = limits
-        self.project.plot_settings.xlim = xlim
-        self.project.plot_settings.ylim = ylim
+        xlim = autoscale_visible_x(self.project)
+        primary_ylim = autoscale_visible_y_axis(self.project, "primary")
 
-        self.plot_settings_panel.set_plot_settings(self.project.plot_settings)
+        if xlim is not None:
+            settings.xlim = xlim
+
+        if primary_ylim is not None:
+            settings.ylim = primary_ylim
+
+        if settings.secondary_y_axis.enabled:
+            secondary_ylim = autoscale_visible_y_axis(self.project, "secondary")
+            if secondary_ylim is not None:
+                settings.secondary_y_axis.limits = secondary_ylim
+
+        if settings.tertiary_y_axis.enabled:
+            tertiary_ylim = autoscale_visible_y_axis(self.project, "tertiary")
+            if tertiary_ylim is not None:
+                settings.tertiary_y_axis.limits = tertiary_ylim
+
+        self.plot_settings_panel.set_plot_settings(settings)
         self.redraw_plot()
         self.mark_dirty()
 
