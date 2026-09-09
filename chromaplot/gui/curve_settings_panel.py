@@ -69,6 +69,12 @@ class CurveSettingsPanel(QWidget):
         self.curve_type_label = QLabel("-")
         curve_form.addRow("Type", self.curve_type_label)
 
+        self.y_axis_combo = QComboBox()
+        self.y_axis_combo.addItem("Primary", "primary")
+        self.y_axis_combo.addItem("Secondary", "secondary")
+        self.y_axis_combo.addItem("Tertiary", "tertiary")
+        curve_form.addRow("Y Axis", self.y_axis_combo)
+
         self.x_label = QLabel("-")
         curve_form.addRow("X", self.x_label)
 
@@ -151,6 +157,7 @@ class CurveSettingsPanel(QWidget):
 
     def _connect_signals(self) -> None:
         self.name_edit.editingFinished.connect(self._apply_name)
+        self.y_axis_combo.currentIndexChanged.connect(self._apply_all)
         self.visible_check.stateChanged.connect(self._apply_all)
         self.color_button.clicked.connect(self._choose_color)
         self.linewidth_spin.valueChanged.connect(self._apply_all)
@@ -211,6 +218,10 @@ class CurveSettingsPanel(QWidget):
         self.x_scale_spin.setValue(curve.transform.x_scale)
         self.y_scale_spin.setValue(curve.transform.y_scale)
 
+        axis_index = self.y_axis_combo.findData(curve.y_axis)
+        if axis_index >= 0:
+            self.y_axis_combo.setCurrentIndex(axis_index)
+
         self._updating = False
 
     def refresh_visibility(self, curve_id: str, visible: bool) -> None:
@@ -246,6 +257,10 @@ class CurveSettingsPanel(QWidget):
             return
 
         self.curve.visible = self.visible_check.isChecked()
+
+        axis_name = self.y_axis_combo.currentData()
+        if axis_name in {"primary", "secondary", "tertiary"}:
+            self.curve.y_axis = axis_name
 
         self.curve.style.linewidth = self.linewidth_spin.value()
         self.curve.style.linestyle = self.linestyle_combo.currentText()

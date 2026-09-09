@@ -625,6 +625,17 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Selected dataset: {dataset.name}", 3000)
 
     def on_curve_settings_changed(self, curve_id: str) -> None:
+        curve = self.project.get_curve(curve_id)
+
+        if curve is not None:
+            if curve.y_axis == "secondary":
+                self.project.plot_settings.secondary_y_axis.enabled = True
+            elif curve.y_axis == "tertiary":
+                self.project.plot_settings.secondary_y_axis.enabled = True
+                self.project.plot_settings.tertiary_y_axis.enabled = True
+
+        self.plot_settings_panel.set_plot_settings(self.project.plot_settings)
+
         self.dataset_tree.set_project(self.project)
         self.redraw_plot()
         self.mark_dirty()
