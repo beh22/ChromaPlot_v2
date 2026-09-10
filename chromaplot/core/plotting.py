@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from matplotlib.ticker import MultipleLocator
+from matplotlib.ticker import AutoMinorLocator, MultipleLocator, NullLocator
 
 from .models import Annotation, Curve, Dataset, Project, PlotSettings, YAxisName, YAxisSettings
 
@@ -46,9 +46,25 @@ def create_plot_axes(
     if settings.secondary_y_axis.enabled:
         secondary = ax.twinx()
 
+        secondary.tick_params(
+            axis="x",
+            which="both",
+            bottom=False,
+            top=False,
+            labelbottom=False,
+        )
+
     if settings.tertiary_y_axis.enabled:
         tertiary = ax.twinx()
         tertiary.spines["right"].set_position(("axes", 1.15)) # or ("outward", 60) for fixed distance?
+
+        tertiary.tick_params(
+            axis="x",
+            which="both",
+            bottom=False,
+            top=False,
+            labelbottom=False,
+        )
 
     return PlotAxes(
         primary=ax,
@@ -63,7 +79,7 @@ def plot_project(
     label_mode: LegendLabelMode = "auto",
     autoscale_if_no_limits: bool = True,
     for_export: bool = False,
-) -> tuple[Figure, Axes]:
+) -> tuple[Figure, PlotAxes]:
     """
     Plot all visible curves in a ChromaPlot project.
 
@@ -86,8 +102,8 @@ def plot_project(
 
     Returns
     -------
-    fig, ax
-        The matplotlib figure and axis.
+    fig, axes
+        The matplotlib figure and collection of primary, secondary, and tertiary axes.
     """
     fig, ax = _get_figure_and_axis(project.plot_settings, ax=ax)
 
@@ -111,6 +127,32 @@ def plot_project(
             autoscale_limits=autoscale_visible_curves(project) if autoscale_if_no_limits else None,
         )
 
+        if axes.secondary is not None:
+            secondary_autoscale = (
+                autoscale_visible_y_axis(project, "secondary")
+                if autoscale_if_no_limits else None
+            )
+
+            apply_extra_y_axis_settings(
+                axes.secondary,
+                project.plot_settings.secondary_y_axis,
+                project.plot_settings,
+                autoscale_limits=secondary_autoscale,
+            )
+
+        if axes.tertiary is not None:
+            tertiary_autoscale = (
+                autoscale_visible_y_axis(project, "tertiary")
+                if autoscale_if_no_limits else None
+            )
+
+            apply_extra_y_axis_settings(
+                axes.tertiary,
+                project.plot_settings.tertiary_y_axis,
+                project.plot_settings,
+                autoscale_limits=tertiary_autoscale,
+            )
+
         plot_annotations(ax, project, for_export=for_export)
 
         for dataset in project.datasets:
@@ -118,7 +160,7 @@ def plot_project(
 
     # fig.tight_layout(rect=[0, 0, 1, 0.95])
     fig.tight_layout()
-    return fig, ax
+    return fig, axes
 
 
 def plot_curve(ax: Axes, curve: Curve, label: str | None = None) -> None:
@@ -359,8 +401,15 @@ def apply_plot_settings(
 
     # Minor ticks
     if ticks.minor_ticks:
-        if not ticks.x_minor_spacing and not ticks.y_minor_spacing:
-            ax.minorticks_on()
+        if ticks.x_minor_spacing is None:
+            ax.xaxis.set_minor_locator(
+                AutoMinorLocator()
+            )
+
+        if ticks.y_minor_spacing is None:
+            ax.yaxis.set_minor_locator(
+                AutoMinorLocator()
+            )
 
         ax.tick_params(
             axis="both",
@@ -369,7 +418,12 @@ def apply_plot_settings(
             length=ticks.minor_tick_length,
         )
     else:
-        ax.minorticks_off()
+        ax.xaxis.set_minor_locator(
+            NullLocator()
+        )
+        ax.yaxis.set_minor_locator(
+            NullLocator()
+        )
 
     # Font family for tick labels
     for tick_label in ax.get_xticklabels() + ax.get_yticklabels():
@@ -407,6 +461,96 @@ def apply_plot_settings(
             )
         if legend is not None:
             legend.set_draggable(False)
+
+def apply_extra_y_axis_settings(
+    ax: Axes,
+    axis_settings: YAxisSettings,
+    plot_settings: PlotSettings,
+    *,
+    autoscale_limits: tuple[float, float] | None = None,
+) -> None:
+    """
+    Apply settings to a secondary or tertiary y-axis
+    """
+    font_family = (
+        "Comic Sans MS" if plot_settings.plot_xkcd else plot_settings.font_family
+    )
+
+    ax.set_ylabel(
+        axis_settings.label,
+        fontsize=plot_settings.font_sizes.axis_label,
+        fontfamily=font_family,
+    )
+
+    if axis_settings.limits is not None:
+        ax.set_ylim(*axis_settings.limits)
+    elif autoscale_limits is not None:
+        ax.set_ylim(*autoscale_limits)
+
+    ticks = plot_settings.tick_settings
+    ylim = ax.get_ylim()
+
+    major_spacing = _safe_locator_spacing(
+        axis_settings.major_spacing,
+        ylim,
+        MAX_MAJOR_TICKS,
+    )
+
+    if major_spacing is not None:
+        ax.yaxis.set_major_locator(
+            MultipleLocator(major_spacing)
+        )
+
+    minor_spacing = _safe_locator_spacing(
+        axis_settings.minor_spacing,
+        ylim,
+        MAX_MINOR_TICKS,
+    )
+
+    if minor_spacing is not None:
+        ax.yaxis.set_minor_locator(
+            MultipleLocator(minor_spacing)
+        )
+
+    ax.tick_params(
+        axis="y",
+        which="major",
+        labelsize=plot_settings.font_sizes.tick_label,
+        direction=ticks.tick_direction,
+        length=ticks.major_tick_length if ticks.major_ticks else 0,
+    )
+
+    if ticks.minor_ticks:
+        if axis_settings.minor_spacing is None:
+            ax.yaxis.set_minor_locator(
+                AutoMinorLocator()
+            )
+
+        ax.tick_params(
+            axis="y",
+            which="minor",
+            direction=ticks.tick_direction,
+            length=ticks.minor_tick_length,
+        )
+
+    else:
+        ax.yaxis.set_minor_locator(
+            NullLocator()
+        )
+
+    for tick_label in ax.get_yticklabels():
+        tick_label.set_fontfamily(font_family)
+
+    if plot_settings.clean_plot:
+        ax.spines["top"].set_visible(False)
+
+    if plot_settings.plot_xkcd:
+        apply_xkcd_style(ax)
+
+
+
+
+
 
 MAX_MAJOR_TICKS = 50
 MAX_MINOR_TICKS = 200

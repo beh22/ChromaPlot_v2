@@ -6,7 +6,7 @@ from matplotlib.backend_bases import MouseButton
 from matplotlib.figure import Figure
 
 from chromaplot.core.models import Project
-from chromaplot.core.plotting import plot_project
+from chromaplot.core.plotting import PlotAxes, plot_project
 
 from PyQt5.QtCore import Qt, pyqtSignal
 
@@ -19,6 +19,8 @@ class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None):
         self.figure = Figure(figsize=(8, 5))
         self.ax = self.figure.add_subplot(111)
+        self.plot_axes = PlotAxes(primary=self.ax)
+
         super().__init__(self.figure)
 
         self._region_selection_callback = None
@@ -42,12 +44,17 @@ class PlotCanvas(FigureCanvas):
         self.redraw()
 
     def redraw(self) -> None:
+        self._region_selection_patch = None
+        
         self.figure.clear()
         self.ax = self.figure.add_subplot(111)
 
         if self.project is not None:
-            plot_project(self.project, ax=self.ax)
+            _, self.plot_axes = plot_project(self.project, ax=self.ax)
+            self.ax = self.plot_axes.primary
         else:
+            self.plot_axes = PlotAxes(primary=self.ax)
+
             self.ax.set_xlabel("Volume (mL)")
             self.ax.set_ylabel("Signal")
 
@@ -105,10 +112,17 @@ class PlotCanvas(FigureCanvas):
         self._region_selection_start_x = None
         self.setCursor(Qt.CrossCursor)
 
+    def _event_is_in_plot(self, event) -> bool:
+        return event.inaxes in (
+            self.plot_axes.primary,
+            self.plot_axes.secondary,
+            self.plot_axes.tertiary,
+        )
+
     def _on_mouse_press(self, event) -> None:
         # Region selection takes priority over marker interaction.
         if self._region_selection_callback is not None:
-            if event.inaxes != self.ax or event.xdata is None:
+            if not self._event_is_in_plot(event) or event.xdata is None:
                 return
 
             self._region_selection_start_x = event.xdata
@@ -117,7 +131,7 @@ class PlotCanvas(FigureCanvas):
         if event.button != MouseButton.LEFT:
             return
 
-        if event.inaxes != self.ax or event.xdata is None:
+        if not self._event_is_in_plot(event) or event.xdata is None:
             return
 
         if self._vertical_marker_is_near_event(event):
@@ -132,7 +146,7 @@ class PlotCanvas(FigureCanvas):
         if self._region_selection_callback is not None:
             if self._region_selection_start_x is None:
                 return
-            if event.inaxes != self.ax or event.xdata is None:
+            if not self._event_is_in_plot(event) or event.xdata is None:
                 return
 
             x0 = self._region_selection_start_x
@@ -155,7 +169,7 @@ class PlotCanvas(FigureCanvas):
 
         # Vertical-marker dragging.
         if self._dragging_vertical_marker:
-            if event.inaxes != self.ax or event.xdata is None:
+            if not self._event_is_in_plot(event) or event.xdata is None:
                 return
 
             self.move_vertical_marker(event.xdata)
@@ -172,7 +186,7 @@ class PlotCanvas(FigureCanvas):
         if self._region_selection_callback is not None:
             if self._region_selection_start_x is None:
                 return
-            if event.inaxes != self.ax or event.xdata is None:
+            if not self._event_is_in_plot(event) or event.xdata is None:
                 return
 
             x0 = self._region_selection_start_x
@@ -195,7 +209,7 @@ class PlotCanvas(FigureCanvas):
 
         # Finish vertical-marker dragging.
         if self._dragging_vertical_marker:
-            if event.inaxes == self.ax and event.xdata is not None:
+            if self._event_is_in_plot(event) and event.xdata is not None:
                 self.move_vertical_marker(event.xdata)
 
             self._dragging_vertical_marker = False
@@ -232,7 +246,7 @@ class PlotCanvas(FigureCanvas):
         if marker is None:
             return False
 
-        if event.inaxes != self.ax:
+        if not self._event_is_in_plot(event):
             return False
 
         try:
