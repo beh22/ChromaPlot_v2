@@ -76,7 +76,6 @@ def plot_project(
     project: Project,
     ax: Axes | None = None,
     *,
-    label_mode: LegendLabelMode = "auto",
     autoscale_if_no_limits: bool = True,
     for_export: bool = False,
 ) -> tuple[Figure, PlotAxes]:
@@ -89,12 +88,6 @@ def plot_project(
         Project object containing datasets, curves, and plot settings.
     ax
         Optional matplotlib axis. If omitted, a new figure and axis are created.
-    label_mode
-        Controls how legend labels are generated:
-
-        - "auto": use curve names for one dataset, dataset + curve for multiple datasets
-        - "curve": use curve names only
-        - "dataset_curve": always use dataset + curve
 
     autoscale_if_no_limits
         If True, calculate sensible limits from visible curves when xlim/ylim are
@@ -114,16 +107,20 @@ def plot_project(
     style_context = plt.xkcd() if project.plot_settings.plot_xkcd else nullcontext()
 
     with style_context:
+
+        legend_handles = []
+
         for dataset, curve in visible_items:
             label = make_curve_label(project, dataset, curve, mode=project.plot_settings.legend_label_mode)
 
             curve_ax = axes.for_curve(curve)
-            plot_curve(curve_ax, curve, label=label)
+            line = plot_curve(curve_ax, curve, label=label)
+            legend_handles.append(line)
 
         apply_plot_settings(
             axes.primary,
             project.plot_settings,
-            has_visible_curves=bool(visible_items),
+            legend_handles=legend_handles,
             autoscale_limits=autoscale_visible_curves(project) if autoscale_if_no_limits else None,
         )
 
@@ -173,7 +170,7 @@ def plot_curve(ax: Axes, curve: Curve, label: str | None = None) -> None:
     x, y = curve.display_arrays()
     style = curve.style
 
-    ax.plot(
+    line, = ax.plot(
         x,
         y,
         label=label or curve.name,
@@ -186,6 +183,7 @@ def plot_curve(ax: Axes, curve: Curve, label: str | None = None) -> None:
         zorder=style.zorder,
     )
 
+    return line 
 
 def plot_dataset_fractions(ax: Axes, dataset: Dataset) -> None:
     settings = dataset.fraction_label_settings
@@ -306,7 +304,7 @@ def apply_plot_settings(
     ax: Axes,
     settings: PlotSettings,
     *,
-    has_visible_curves: bool = True,
+    legend_handles=None,
     autoscale_limits: tuple[tuple[float, float], tuple[float, float]] | None = None,
 ) -> None:
     """
@@ -437,7 +435,7 @@ def apply_plot_settings(
     if settings.plot_xkcd:
         apply_xkcd_style(ax)
 
-    if settings.show_legend and has_visible_curves:
+    if settings.show_legend and legend_handles:
 
         legend_prop = {
             "family": font_family,
@@ -446,6 +444,7 @@ def apply_plot_settings(
 
         if settings.legend_location == "outside top":
             legend = ax.legend(
+                handles=legend_handles,
                 loc="upper center",
                 bbox_to_anchor=(settings.legend_bbox_x, settings.legend_bbox_y),
                 frameon=not settings.clean_plot,
@@ -455,6 +454,7 @@ def apply_plot_settings(
 
         else:
             legend = ax.legend(
+                handles=legend_handles,
                 loc=settings.legend_location,
                 frameon=not settings.clean_plot,
                 prop=legend_prop,
