@@ -142,6 +142,7 @@ YAxisName = Literal[
 class YAxisSettings:
     enabled: bool = False
     label: str = ""
+    label_is_auto: bool = True
     limits: tuple[float, float] | None = None
     major_spacing: float | None = None
     minor_spacing: float | None = None
@@ -150,6 +151,7 @@ class YAxisSettings:
         return {
             "enabled": self.enabled,
             "label": self.label,
+            "label_is_auto": self.label_is_auto,
             "limits": list(self.limits) if self.limits is not None else None,
             "major_spacing": self.major_spacing,
             "minor_spacing": self.minor_spacing,
@@ -165,6 +167,7 @@ class YAxisSettings:
         return cls(
             enabled=bool(data.get("enabled", False)),
             label=str(data.get("label", "")),
+            label_is_auto=bool(data.get("label_is_auto", True)),
             limits=tuple(limits) if limits is not None else None,
             major_spacing=data.get("major_spacing"),
             minor_spacing=data.get("minor_spacing"),
@@ -371,6 +374,29 @@ class Curve:
     def label(self) -> str:
         """Label used for legends. Currently the same as name."""
         return self.name
+
+    @property
+    def axis_label(self) -> str:
+        """Return a sensible default Y-axis label for this curve."""
+        curve_type = str(self.metadata.get("curve_type", "unknown"))
+
+        labels = {
+            "conductivity": "Conductivity",
+            "gradient": "Gradient",
+            "flow": "Flow",
+            "pressure": "Pressure",
+            "temperature": "Temperature",
+            "ph": "pH",
+            "uv": "Absorbance",
+            "uv_auxiliary": "Absorbance",
+        }
+
+        label = labels.get(curve_type, self.y_label)
+
+        if self.y_unit:
+            return f"{label} ({self.y_unit})"
+
+        return label
 
     def raw_arrays(self) -> tuple[np.ndarray, np.ndarray]:
         """Return raw x/y data as NumPy arrays."""

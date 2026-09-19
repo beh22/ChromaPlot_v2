@@ -689,6 +689,9 @@ class MainWindow(QMainWindow):
                 self.project.plot_settings.secondary_y_axis.enabled = True
                 self.project.plot_settings.tertiary_y_axis.enabled = True
 
+        self.update_auto_y_axis_label("secondary")
+        self.update_auto_y_axis_label("tertiary")
+
         self.secondary_y_axis_action.blockSignals(True)
         self.secondary_y_axis_action.setChecked(
             self.project.plot_settings.secondary_y_axis.enabled
@@ -1271,3 +1274,36 @@ class MainWindow(QMainWindow):
 
         self.redraw_plot()
         self.mark_dirty()
+
+    def update_auto_y_axis_label(self, axis_name: str) -> None:
+        settings = self.project.plot_settings
+
+        if axis_name == "secondary":
+            axis_settings = settings.secondary_y_axis
+        elif axis_name == "tertiary":
+            axis_settings = settings.tertiary_y_axis
+        else:
+            return
+
+        if not axis_settings.label_is_auto:
+            return
+
+        curves = [
+            curve for dataset in self.project.datasets
+            for curve in dataset.curves
+            if curve.y_axis == axis_name
+        ]
+
+        if not curves:
+            axis_settings.label = ""
+            return
+
+        labels = {curve.axis_label for curve in curves}
+
+        # If every curve wants the same label, use it
+        if len(labels) == 1:
+            axis_settings.label = next(iter(labels))
+
+        # If several different types are present, preserve current label
+        elif not axis_settings.label:
+            axis_settings.label = curves[0].axis_label

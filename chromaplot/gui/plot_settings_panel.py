@@ -467,7 +467,7 @@ class PlotSettingsPanel(QWidget):
         self.autoscale_button.clicked.connect(self.autoscale_requested.emit)
 
         # Secondary Y axis
-        self.secondary_y_label_edit.editingFinished.connect(self._apply_all)
+        self.secondary_y_label_edit.editingFinished.connect(self._secondary_label_edited)
         self.secondary_use_ylim_check.stateChanged.connect(self._apply_all)
         self.secondary_ymin_spin.valueChanged.connect(self._apply_all)
         self.secondary_ymax_spin.valueChanged.connect(self._apply_all)
@@ -485,7 +485,7 @@ class PlotSettingsPanel(QWidget):
         )
 
         # Tertiary Y axis
-        self.tertiary_y_label_edit.editingFinished.connect(self._apply_all)
+        self.tertiary_y_label_edit.editingFinished.connect(self._tertiary_label_edited)
         self.tertiary_use_ylim_check.stateChanged.connect(self._apply_all)
         self.tertiary_ymin_spin.valueChanged.connect(self._apply_all)
         self.tertiary_ymax_spin.valueChanged.connect(self._apply_all)
@@ -1050,3 +1050,17 @@ class PlotSettingsPanel(QWidget):
         minimum = self._minimum_spacing(span, maximum_ticks)
 
         return max(value, minimum)
+
+    def _secondary_label_edited(self) -> None:
+        if self._updating or self.settings is None:
+            return
+
+        self.settings.secondary_y_axis.label_is_auto = False
+        self._apply_all()
+
+    def _tertiary_label_edited(self) -> None:
+        if self._updating or self.settings is None:
+            return
+
+        self.settings.tertiary_y_axis.label_is_auto = False
+        self._apply_all()
