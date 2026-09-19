@@ -42,7 +42,9 @@ class PlotSettingsPanel(QWidget):
         self._updating = False
 
         self._current_xlim: tuple[float, float] | None = None
-        self._current_ylim: tuple[float, float] | None = None
+        self._current_primary_ylim: tuple[float, float] | None = None
+        self._current_secondary_ylim: tuple[float, float] | None = None
+        self._current_tertiary_ylim: tuple[float, float] | None = None
 
         self._build_ui()
         self._connect_signals()
@@ -51,6 +53,66 @@ class PlotSettingsPanel(QWidget):
     # ------------------------------------------------------------------
     # UI setup
     # ------------------------------------------------------------------
+
+    def _make_extra_y_axis_group(
+        self, title: str
+        ) -> tuple[
+            QGroupBox,
+            QLineEdit,
+            QCheckBox,
+            QDoubleSpinBox,
+            QDoubleSpinBox,
+            QWidget,
+            QDoubleSpinBox,
+            QPushButton,
+            QWidget,
+            QDoubleSpinBox,
+            QPushButton,
+        ]:
+        group = QGroupBox(title)
+        form = QFormLayout(group)
+
+        label_edit = QLineEdit()
+        form.addRow("Label", label_edit)
+
+        use_limits_check = QCheckBox("Use manual limits")
+        form.addRow("", use_limits_check)
+
+        min_spin = self._make_limit_spinbox()
+        max_spin = self._make_limit_spinbox()
+
+        form.addRow("Min", min_spin)
+        form.addRow("Max", max_spin)
+
+        (
+            major_spacing_widget,
+            major_spacing_spin,
+            major_spacing_auto_button,
+        ) = self._make_tick_spacing_control()
+
+        form.addRow("Major tick spacing", major_spacing_widget)
+
+        (
+            minor_spacing_widget,
+            minor_spacing_spin,
+            minor_spacing_auto_button,
+        ) = self._make_tick_spacing_control()
+
+        form.addRow("Minor tick spacing", minor_spacing_widget)
+
+        return (
+            group,
+            label_edit,
+            use_limits_check,
+            min_spin,
+            max_spin,
+            major_spacing_widget,
+            major_spacing_spin,
+            major_spacing_auto_button,
+            minor_spacing_widget,
+            minor_spacing_spin,
+            minor_spacing_auto_button,
+        )
 
     def _build_ui(self) -> None:
         outer_layout = QVBoxLayout(self)
@@ -79,7 +141,7 @@ class PlotSettingsPanel(QWidget):
         labels_form.addRow("X label", self.x_label_edit)
 
         self.y_label_edit = QLineEdit()
-        labels_form.addRow("Y label", self.y_label_edit)
+        labels_form.addRow("Primary Y label", self.y_label_edit)
 
         main_layout.addWidget(self.labels_group)
 
@@ -97,18 +159,58 @@ class PlotSettingsPanel(QWidget):
         limits_form.addRow("X min", self.xmin_spin)
         limits_form.addRow("X max", self.xmax_spin)
 
-        self.use_ylim_check = QCheckBox("Use manual Y limits")
+        self.use_ylim_check = QCheckBox("Use manual Primary Y limits")
         limits_form.addRow("", self.use_ylim_check)
 
         self.ymin_spin = self._make_limit_spinbox()
         self.ymax_spin = self._make_limit_spinbox()
-        limits_form.addRow("Y min", self.ymin_spin)
-        limits_form.addRow("Y max", self.ymax_spin)
+        limits_form.addRow("Primary Y min", self.ymin_spin)
+        limits_form.addRow("Primary Y max", self.ymax_spin)
 
         self.autoscale_button = QPushButton("Autoscale visible curves")
         limits_form.addRow("", self.autoscale_button)
 
         main_layout.addWidget(self.limits_group)
+
+        # -------------------------
+        # Secondary/tertiary Y axes
+        # -------------------------
+
+        (
+            self.secondary_axis_group,
+            self.secondary_y_label_edit,
+            self.secondary_use_ylim_check,
+            self.secondary_ymin_spin,
+            self.secondary_ymax_spin,
+            self.secondary_y_major_spacing_widget,
+            self.secondary_y_major_spacing_spin,
+            self.secondary_y_major_spacing_auto_button,
+            self.secondary_y_minor_spacing_widget,
+            self.secondary_y_minor_spacing_spin,
+            self.secondary_y_minor_spacing_auto_button,
+        ) = self._make_extra_y_axis_group(
+            "Secondary Y Axis"
+        )
+
+        main_layout.addWidget(self.secondary_axis_group)
+
+        (
+            self.tertiary_axis_group,
+            self.tertiary_y_label_edit,
+            self.tertiary_use_ylim_check,
+            self.tertiary_ymin_spin,
+            self.tertiary_ymax_spin,
+            self.tertiary_y_major_spacing_widget,
+            self.tertiary_y_major_spacing_spin,
+            self.tertiary_y_major_spacing_auto_button,
+            self.tertiary_y_minor_spacing_widget,
+            self.tertiary_y_minor_spacing_spin,
+            self.tertiary_y_minor_spacing_auto_button,
+        ) = self._make_extra_y_axis_group(
+            "Tertiary Y Axis"
+        )
+
+        main_layout.addWidget(self.tertiary_axis_group)
 
         # -------------------------
         # Figure size
@@ -271,14 +373,14 @@ class PlotSettingsPanel(QWidget):
             self.y_major_spacing_spin,
             self.y_major_spacing_auto_button,
         ) = self._make_tick_spacing_control()
-        tick_form.addRow("Y major spacing", self.y_major_spacing_widget)
+        tick_form.addRow("Primary Y major spacing", self.y_major_spacing_widget)
 
         (
             self.y_minor_spacing_widget,
             self.y_minor_spacing_spin,
             self.y_minor_spacing_auto_button,
         ) = self._make_tick_spacing_control()
-        tick_form.addRow("Y minor spacing", self.y_minor_spacing_widget)
+        tick_form.addRow("Primary Y minor spacing", self.y_minor_spacing_widget)
 
         self.reset_tick_spacing_button = QPushButton(
             "Reset all spacing to Auto"
@@ -363,6 +465,42 @@ class PlotSettingsPanel(QWidget):
         self.ymin_spin.valueChanged.connect(self._apply_all)
         self.ymax_spin.valueChanged.connect(self._apply_all)
         self.autoscale_button.clicked.connect(self.autoscale_requested.emit)
+
+        # Secondary Y axis
+        self.secondary_y_label_edit.editingFinished.connect(self._apply_all)
+        self.secondary_use_ylim_check.stateChanged.connect(self._apply_all)
+        self.secondary_ymin_spin.valueChanged.connect(self._apply_all)
+        self.secondary_ymax_spin.valueChanged.connect(self._apply_all)
+        self.secondary_y_major_spacing_spin.valueChanged.connect(self._apply_all)
+        self.secondary_y_minor_spacing_spin.valueChanged.connect(self._apply_all)
+        self.secondary_y_major_spacing_auto_button.clicked.connect(
+            lambda: self._reset_tick_spacing(
+                self.secondary_y_major_spacing_spin
+            )
+        )
+        self.secondary_y_minor_spacing_auto_button.clicked.connect(
+            lambda: self._reset_tick_spacing(
+                self.secondary_y_minor_spacing_spin
+            )
+        )
+
+        # Tertiary Y axis
+        self.tertiary_y_label_edit.editingFinished.connect(self._apply_all)
+        self.tertiary_use_ylim_check.stateChanged.connect(self._apply_all)
+        self.tertiary_ymin_spin.valueChanged.connect(self._apply_all)
+        self.tertiary_ymax_spin.valueChanged.connect(self._apply_all)
+        self.tertiary_y_major_spacing_spin.valueChanged.connect(self._apply_all)
+        self.tertiary_y_minor_spacing_spin.valueChanged.connect(self._apply_all)
+        self.tertiary_y_major_spacing_auto_button.clicked.connect(
+            lambda: self._reset_tick_spacing(
+                self.tertiary_y_major_spacing_spin
+            )
+        )
+        self.tertiary_y_minor_spacing_auto_button.clicked.connect(
+            lambda: self._reset_tick_spacing(
+                self.tertiary_y_minor_spacing_spin
+            )
+        )
 
         self.figure_width_spin.valueChanged.connect(self._apply_all)
         self.figure_height_spin.valueChanged.connect(self._apply_all)
@@ -468,6 +606,47 @@ class PlotSettingsPanel(QWidget):
         self.ymin_spin.setEnabled(settings.ylim is not None)
         self.ymax_spin.setEnabled(settings.ylim is not None)
 
+        # Secondary and tertiary axes
+        self.secondary_axis_group.setVisible(settings.secondary_y_axis.enabled)
+        self.tertiary_axis_group.setVisible(settings.tertiary_y_axis.enabled)
+
+        secondary = settings.secondary_y_axis
+
+        self.secondary_y_label_edit.setText(secondary.label)
+        self.secondary_use_ylim_check.setChecked(secondary.limits is not None)
+
+        if secondary.limits is not None:
+            self.secondary_ymin_spin.setValue(secondary.limits[0])
+            self.secondary_ymax_spin.setValue(secondary.limits[1])
+        else:
+            self.secondary_ymin_spin.setValue(0.0)
+            self.secondary_ymax_spin.setValue(0.0)
+
+        self.secondary_ymin_spin.setEnabled(secondary.limits is not None)
+        self.secondary_ymax_spin.setEnabled(secondary.limits is not None)
+
+        self.secondary_y_major_spacing_spin.setValue(secondary.major_spacing or 0.0)
+        self.secondary_y_minor_spacing_spin.setValue(secondary.minor_spacing or 0.0)
+
+        tertiary = settings.tertiary_y_axis
+
+        self.tertiary_y_label_edit.setText(tertiary.label)
+        self.tertiary_use_ylim_check.setChecked(tertiary.limits is not None)
+
+        if tertiary.limits is not None:
+            self.tertiary_ymin_spin.setValue(tertiary.limits[0])
+            self.tertiary_ymax_spin.setValue(tertiary.limits[1])
+        else:
+            self.tertiary_ymin_spin.setValue(0.0)
+            self.tertiary_ymax_spin.setValue(0.0)
+
+        self.tertiary_ymin_spin.setEnabled(tertiary.limits is not None)
+        self.tertiary_ymax_spin.setEnabled(tertiary.limits is not None)
+
+        self.tertiary_y_major_spacing_spin.setValue(tertiary.major_spacing or 0.0)
+        self.tertiary_y_minor_spacing_spin.setValue(tertiary.minor_spacing or 0.0)
+
+
         self.figure_width_spin.setValue(settings.figure_width)
         self.figure_height_spin.setValue(settings.figure_height)
 
@@ -512,16 +691,35 @@ class PlotSettingsPanel(QWidget):
     def set_current_axis_limits(
         self,
         xlim: tuple[float, float],
-        ylim: tuple[float, float],
+        primary_ylim: tuple[float, float],
+        secondary_ylim: tuple[float, float] | None = None,
+        tertiary_ylim: tuple[float, float] | None = None,
     ) -> None:
         self._current_xlim = (
             float(xlim[0]),
             float(xlim[1]),
         )
-        self._current_ylim = (
-            float(ylim[0]),
-            float(ylim[1]),
+
+        self._current_primary_ylim = (
+            float(primary_ylim[0]),
+            float(primary_ylim[1]),
         )
+
+        if secondary_ylim is not None:
+            self._current_secondary_ylim = (
+                float(secondary_ylim[0]),
+                float(secondary_ylim[1]),
+            )
+        else:
+            self._current_secondary_ylim = None
+
+        if tertiary_ylim is not None:
+            self._current_tertiary_ylim = (
+                float(tertiary_ylim[0]),
+                float(tertiary_ylim[1]),
+            )
+        else:
+            self._current_tertiary_ylim = None
 
         self._update_tick_spacing_steps()
 
@@ -533,9 +731,17 @@ class PlotSettingsPanel(QWidget):
         if self._updating or self.settings is None:
             return
 
+        # ------------------
+        # Labels
+        # ------------------
+
         self.settings.title = self.title_edit.text()
         self.settings.x_label = self.x_label_edit.text()
         self.settings.y_label = self.y_label_edit.text()
+
+        # ------------------
+        # Primary X/Y limits
+        # ------------------
 
         self.xmin_spin.setEnabled(self.use_xlim_check.isChecked())
         self.xmax_spin.setEnabled(self.use_xlim_check.isChecked())
@@ -558,8 +764,86 @@ class PlotSettingsPanel(QWidget):
         else:
             self.settings.ylim = None
 
+        # ------------------
+        # Secondary Y axis
+        # ------------------
+
+        secondary = self.settings.secondary_y_axis
+
+        secondary.label = self.secondary_y_label_edit.text()
+
+        self.secondary_ymin_spin.setEnabled(self.secondary_use_ylim_check.isChecked())
+        self.secondary_ymax_spin.setEnabled(self.secondary_use_ylim_check.isChecked())
+
+        if self.secondary_use_ylim_check.isChecked():
+            ymin = self.secondary_ymin_spin.value()
+            ymax = self.secondary_ymax_spin.value()
+
+            if ymin != ymax:
+                secondary.limits = (ymin, ymax)
+        else:
+            secondary.limits = None
+
+        secondary_major_spacing = self._validated_tick_spacing(
+            self.secondary_y_major_spacing_spin.value(),
+            self._current_secondary_ylim,
+            MAX_MAJOR_TICKS,
+        )
+
+        secondary_minor_spacing = self._validated_tick_spacing(
+            self.secondary_y_minor_spacing_spin.value(),
+            self._current_secondary_ylim,
+            MAX_MINOR_TICKS,
+        )
+
+        secondary.major_spacing = secondary_major_spacing
+        secondary.minor_spacing = secondary_minor_spacing
+
+        # ------------------
+        # Tertiary Y axis
+        # ------------------
+
+        tertiary = self.settings.tertiary_y_axis
+
+        tertiary.label = self.tertiary_y_label_edit.text()
+
+        self.tertiary_ymin_spin.setEnabled(self.tertiary_use_ylim_check.isChecked())
+        self.tertiary_ymax_spin.setEnabled(self.tertiary_use_ylim_check.isChecked())
+
+        if self.tertiary_use_ylim_check.isChecked():
+            ymin = self.tertiary_ymin_spin.value()
+            ymax = self.tertiary_ymax_spin.value()
+
+            if ymin != ymax:
+                tertiary.limits = (ymin, ymax)
+        else:
+            tertiary.limits = None
+
+        tertiary_major_spacing = self._validated_tick_spacing(
+            self.tertiary_y_major_spacing_spin.value(),
+            self._current_tertiary_ylim,
+            MAX_MAJOR_TICKS,
+        )
+
+        tertiary_minor_spacing = self._validated_tick_spacing(
+            self.tertiary_y_minor_spacing_spin.value(),
+            self._current_tertiary_ylim,
+            MAX_MINOR_TICKS,
+        )
+
+        tertiary.major_spacing = tertiary_major_spacing
+        tertiary.minor_spacing = tertiary_minor_spacing
+
+        # ------------------
+        # Figure size
+        # ------------------
+
         self.settings.figure_width = self.figure_width_spin.value()
         self.settings.figure_height = self.figure_height_spin.value()
+
+        # ------------------
+        # Legend/display
+        # ------------------        
 
         self.settings.show_legend = self.show_legend_check.isChecked()
         self.settings.legend_location = self.legend_location_combo.currentText()
@@ -572,12 +856,20 @@ class PlotSettingsPanel(QWidget):
         self.settings.grid = self.grid_check.isChecked()
         self.settings.clean_plot = self.clean_plot_check.isChecked()
 
+        # ------------------
+        # Fonts
+        # ------------------        
+
         self.settings.font_family = self.font_family_combo.currentFont().family()
 
         self.settings.font_sizes.title = self.title_font_spin.value()
         self.settings.font_sizes.axis_label = self.axis_font_spin.value()
         self.settings.font_sizes.tick_label = self.tick_font_spin.value()
         self.settings.font_sizes.legend = self.legend_font_spin.value()
+
+        # ------------------
+        # Shared tick settings
+        # ------------------        
 
         ticks = self.settings.tick_settings
 
@@ -597,30 +889,34 @@ class PlotSettingsPanel(QWidget):
             MAX_MINOR_TICKS,
         )
 
-        y_major_spacing = self._validated_tick_spacing(
+        primary_y_major_spacing = self._validated_tick_spacing(
             self.y_major_spacing_spin.value(),
-            self._current_ylim,
+            self._current_primary_ylim,
             MAX_MAJOR_TICKS,
         )
 
-        y_minor_spacing = self._validated_tick_spacing(
+        primary_y_minor_spacing = self._validated_tick_spacing(
             self.y_minor_spacing_spin.value(),
-            self._current_ylim,
+            self._current_primary_ylim,
             MAX_MINOR_TICKS,
         )
 
         ticks.x_major_spacing = x_major_spacing
         ticks.x_minor_spacing = x_minor_spacing
-        ticks.y_major_spacing = y_major_spacing
-        ticks.y_minor_spacing = y_minor_spacing
+        ticks.y_major_spacing = primary_y_major_spacing
+        ticks.y_minor_spacing = primary_y_minor_spacing
 
         self._updating = True
 
         try:
             self.x_major_spacing_spin.setValue(x_major_spacing or 0.0)
             self.x_minor_spacing_spin.setValue(x_minor_spacing or 0.0)
-            self.y_major_spacing_spin.setValue(y_major_spacing or 0.0)
-            self.y_minor_spacing_spin.setValue(y_minor_spacing or 0.0)
+            self.y_major_spacing_spin.setValue(primary_y_major_spacing or 0.0)
+            self.y_minor_spacing_spin.setValue(primary_y_minor_spacing or 0.0)
+            self.secondary_y_minor_spacing_spin.setValue(secondary_minor_spacing or 0.0)
+            self.secondary_y_major_spacing_spin.setValue(secondary_major_spacing or 0.0)
+            self.tertiary_y_minor_spacing_spin.setValue(tertiary_minor_spacing or 0.0)
+            self.tertiary_y_major_spacing_spin.setValue(tertiary_major_spacing or 0.0)
         finally:
             self._updating = False
 
@@ -645,8 +941,16 @@ class PlotSettingsPanel(QWidget):
         try:
             self.x_major_spacing_spin.setValue(0.0)
             self.x_minor_spacing_spin.setValue(0.0)
+
             self.y_major_spacing_spin.setValue(0.0)
             self.y_minor_spacing_spin.setValue(0.0)
+
+            self.secondary_y_major_spacing_spin.setValue(0.0)
+            self.secondary_y_minor_spacing_spin.setValue(0.0)
+
+            self.tertiary_y_major_spacing_spin.setValue(0.0)
+            self.tertiary_y_minor_spacing_spin.setValue(0.0)
+
         finally:
             self._updating = False
 
@@ -654,7 +958,9 @@ class PlotSettingsPanel(QWidget):
 
     def _update_tick_spacing_steps(self) -> None:
         x_span = self._axis_span(self._current_xlim)
-        y_span = self._axis_span(self._current_ylim)
+        primary_y_span = self._axis_span(self._current_primary_ylim)
+        secondary_y_span = self._axis_span(self._current_secondary_ylim)
+        tertiary_y_span = self._axis_span(self._current_tertiary_ylim)
 
         if x_span is not None:
             self.x_major_spacing_spin.setSingleStep(
@@ -664,13 +970,29 @@ class PlotSettingsPanel(QWidget):
                 self._minimum_spacing(x_span, MAX_MINOR_TICKS)
             )
 
-        if y_span is not None:
+        if primary_y_span is not None:
             self.y_major_spacing_spin.setSingleStep(
-                self._minimum_spacing(y_span, MAX_MAJOR_TICKS)
+                self._minimum_spacing(primary_y_span, MAX_MAJOR_TICKS)
             )
             self.y_minor_spacing_spin.setSingleStep(
-                self._minimum_spacing(y_span, MAX_MINOR_TICKS)
+                self._minimum_spacing(primary_y_span, MAX_MINOR_TICKS)
             )
+
+        if secondary_y_span is not None:
+            self.y_major_spacing_spin.setSingleStep(
+                self._minimum_spacing(secondary_y_span, MAX_MAJOR_TICKS)
+            )
+            self.y_minor_spacing_spin.setSingleStep(
+                self._minimum_spacing(secondary_y_span, MAX_MINOR_TICKS)
+            )
+
+        if tertiary_y_span is not None:
+            self.y_major_spacing_spin.setSingleStep(
+                self._minimum_spacing(tertiary_y_span, MAX_MAJOR_TICKS)
+            )
+            self.y_minor_spacing_spin.setSingleStep(
+                self._minimum_spacing(tertiary_y_span, MAX_MINOR_TICKS)
+            )         
 
     @staticmethod
     def _axis_span(

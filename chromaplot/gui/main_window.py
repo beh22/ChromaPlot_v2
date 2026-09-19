@@ -285,9 +285,16 @@ class MainWindow(QMainWindow):
 
         self.plot_canvas.set_project(self.project)
 
+        axes = self.plot_canvas.plot_axes
+
+        secondary_ylim = (axes.secondary.get_ylim() if axes.secondary is not None else None)
+        tertiary_ylim = (axes.tertiary.get_ylim() if axes.tertiary is not None else None)
+
         self.plot_settings_panel.set_current_axis_limits(
-            self.plot_canvas.ax.get_xlim(),
-            self.plot_canvas.ax.get_ylim(),
+            axes.primary.get_xlim(),
+            axes.primary.get_ylim(),
+            secondary_ylim,
+            tertiary_ylim,
         )
 
         marker = self.project.vertical_marker()
@@ -339,9 +346,18 @@ class MainWindow(QMainWindow):
         self.plot_canvas.redraw()
 
         xlim = self.plot_canvas.ax.get_xlim()
-        ylim = self.plot_canvas.ax.get_ylim()
 
-        self.plot_settings_panel.set_current_axis_limits(xlim, ylim)
+        axes = self.plot_canvas.plot_axes
+
+        secondary_ylim = (axes.secondary.get_ylim() if axes.secondary is not None else None)
+        tertiary_ylim = (axes.tertiary.get_ylim() if axes.tertiary is not None else None)
+
+        self.plot_settings_panel.set_current_axis_limits(
+            axes.primary.get_xlim(),
+            axes.primary.get_ylim(),
+            secondary_ylim,
+            tertiary_ylim,
+        )
 
         if self.vertical_marker_action.isChecked():
             self.vertical_marker_window.set_position_range(
