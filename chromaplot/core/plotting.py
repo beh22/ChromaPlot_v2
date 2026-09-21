@@ -150,7 +150,7 @@ def plot_project(
                 autoscale_limits=tertiary_autoscale,
             )
 
-        plot_annotations(ax, project, for_export=for_export)
+        plot_annotations(axes, project, for_export=for_export)
 
         for dataset in project.datasets:
             plot_dataset_fractions(ax, dataset)
@@ -721,13 +721,13 @@ def _get_figure_and_axis(settings: PlotSettings, ax: Axes | None = None) -> tupl
 # Annotations
 # -----------------------------------------------------------------------------
 
-def plot_annotations(ax: Axes, project: Project, for_export: bool = False) -> None:
+def plot_annotations(axes: PlotAxes, project: Project, for_export: bool = False) -> None:
     for annotation in project.annotations:
         if not annotation.visible:
             continue
 
         if annotation.type == "shaded_region":
-            plot_shaded_region(ax, annotation, project)
+            plot_shaded_region(axes, annotation, project)
 
         elif annotation.type == "vertical_marker":
             if for_export:
@@ -736,10 +736,10 @@ def plot_annotations(ax: Axes, project: Project, for_export: bool = False) -> No
                 ):
                     continue
 
-            plot_vertical_marker(ax, annotation)
+            plot_vertical_marker(axes.primary, annotation)
 
 def plot_shaded_region(
-    ax: Axes,
+    axes: PlotAxes,
     annotation: Annotation,
     project: Project,
 ) -> None:
@@ -751,6 +751,8 @@ def plot_shaded_region(
 
     if curve is None:
         return
+
+    ax = axes.for_curve(curve)
 
     try:
         x_start = float(data.get("x_start"))
