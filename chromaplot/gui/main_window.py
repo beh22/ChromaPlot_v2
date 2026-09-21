@@ -480,6 +480,19 @@ class MainWindow(QMainWindow):
         self.refresh_ui_from_project()
         self.mark_clean()
 
+    def open_project_path(self, path: str | Path) -> None:
+        """Open a ChromaPlot project from a known file path"""
+        path = Path(path)
+
+        self.project = load_project(path)
+        self.project_path = path
+
+        self.refresh_ui_from_project()
+        QTimer.singleShot(50, self.restore_project_ui_state)
+
+        self.mark_clean()
+        self.statusBar().showMessage(f"Opened project: {path}", 5000)
+
     def open_project(self) -> None:
         if not self.maybe_save_changes():
             return
@@ -494,12 +507,8 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            self.project = load_project(path)
-            self.project_path = Path(path)
-            self.refresh_ui_from_project()
-            QTimer.singleShot(50, self.restore_project_ui_state)
-            self.mark_clean()
-            self.statusBar().showMessage(f"Opened project: {path}", 5000)
+            self.open_project_path(path)
+
         except Exception as exc:
             QMessageBox.critical(self, "Open project failed", str(exc))
 
@@ -547,16 +556,10 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Save project failed", str(exc))
             return False
 
-    def import_data_files(self) -> None:
-        paths, _ = QFileDialog.getOpenFileNames(
-            self,
-            "Import chromatography data",
-            "",
-            "Chromatography Files (*.txt *.csv *.tsv *.asc);;All Files (*)",
-        )
-        if not paths:
-            return
-
+    def import_data_paths(
+        self, paths: list[str | Path],
+    ) -> tuple[int, list[str]]:
+        """Import chromatography datasets from know file paths"""
         imported = 0
         errors: list[str] = []
 
@@ -568,15 +571,39 @@ class MainWindow(QMainWindow):
 
                 self.project.add_dataset(dataset)
                 imported += 1
+
             except Exception as exc:
                 errors.append(f"{path}: {exc}")
 
         if imported:
-            if self.project.name == "Untitled" and imported == 1 and len(self.project.datasets) == 1:
+            if (
+                self.project.name == "Untitled"
+                and imported == 1
+                and len(self.project.datasets) == 1
+            ):
                 self.project.name = self.project.datasets[0].name
+
             self.refresh_ui_from_project()
             self.mark_dirty()
-            self.statusBar().showMessage(f"Imported {imported} dataset(s)", 5000)
+
+            self.statusBar().showMessage(
+                f"Imported {imported} dataset(s)",
+                5000,
+            )
+
+        return imported, errors
+
+    def import_data_files(self) -> None:
+        paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Import chromatography data",
+            "",
+            "Chromatography Files (*.txt *.csv *.tsv *.asc);;All Files (*)",
+        )
+        if not paths:
+            return
+
+        _, errors = self.import_data_paths(paths)
 
         if errors:
             QMessageBox.warning(
