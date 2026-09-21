@@ -210,6 +210,17 @@ class PlotSettingsPanel(QWidget):
             "Tertiary Y Axis"
         )
 
+        self.tertiary_y_offset_spin = QDoubleSpinBox()
+        self.tertiary_y_offset_spin.setRange(0.0, 1.0)
+        self.tertiary_y_offset_spin.setSingleStep(0.01)
+        self.tertiary_y_offset_spin.setDecimals(3)
+
+        tertiary_form = self.tertiary_axis_group.layout()
+        tertiary_form.addRow(
+            "Axis offset",
+            self.tertiary_y_offset_spin,
+        )
+
         main_layout.addWidget(self.tertiary_axis_group)
 
         # -------------------------
@@ -501,6 +512,7 @@ class PlotSettingsPanel(QWidget):
                 self.tertiary_y_minor_spacing_spin
             )
         )
+        self.tertiary_y_offset_spin.valueChanged.connect(self._apply_all)
 
         self.figure_width_spin.valueChanged.connect(self._apply_all)
         self.figure_height_spin.valueChanged.connect(self._apply_all)
@@ -632,6 +644,8 @@ class PlotSettingsPanel(QWidget):
 
         self.tertiary_y_label_edit.setText(tertiary.label)
         self.tertiary_use_ylim_check.setChecked(tertiary.limits is not None)
+
+        self.tertiary_y_offset_spin.setValue(tertiary.offset)
 
         if tertiary.limits is not None:
             self.tertiary_ymin_spin.setValue(tertiary.limits[0])
@@ -806,6 +820,7 @@ class PlotSettingsPanel(QWidget):
         tertiary = self.settings.tertiary_y_axis
 
         tertiary.label = self.tertiary_y_label_edit.text()
+        tertiary.offset = self.tertiary_y_offset_spin.value()
 
         self.tertiary_ymin_spin.setEnabled(self.tertiary_use_ylim_check.isChecked())
         self.tertiary_ymax_spin.setEnabled(self.tertiary_use_ylim_check.isChecked())

@@ -56,7 +56,7 @@ def create_plot_axes(
 
     if settings.tertiary_y_axis.enabled:
         tertiary = ax.twinx()
-        tertiary.spines["right"].set_position(("axes", 1.15)) # or ("outward", 60) for fixed distance?
+        tertiary.spines["right"].set_position(("axes", 1.0 + settings.tertiary_y_axis.offset)) 
 
         tertiary.tick_params(
             axis="x",

@@ -5,6 +5,7 @@
 ### Added
 - Added an interactive vertical marker for inspecting values across all visible curves, with dragging, keyboard movement, and direct position entry
 - Added customisable vertical marker appearance and optional inclusion in exported figures
+- 
 
 
 ## Version 2.1.0 - 2026-07-17

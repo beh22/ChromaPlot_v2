@@ -146,6 +146,7 @@ class YAxisSettings:
     limits: tuple[float, float] | None = None
     major_spacing: float | None = None
     minor_spacing: float | None = None
+    offset: float = 0.15
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -155,6 +156,7 @@ class YAxisSettings:
             "limits": list(self.limits) if self.limits is not None else None,
             "major_spacing": self.major_spacing,
             "minor_spacing": self.minor_spacing,
+            "offset": self.offset,
         }
 
     @classmethod
@@ -171,6 +173,7 @@ class YAxisSettings:
             limits=tuple(limits) if limits is not None else None,
             major_spacing=data.get("major_spacing"),
             minor_spacing=data.get("minor_spacing"),
+            offset=float(data.get("offset", 0.15))
         )
 
 @dataclass
