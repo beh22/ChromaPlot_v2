@@ -764,16 +764,39 @@ def plot_shaded_region(
 
     x, y = curve.display_arrays()
 
-    mask = (x >= xmin) & (x <= xmax)
+    finite = np.isfinite(x) & np.isfinite(y)
+    x = x[finite]
+    y = y[finite]
 
-    if not np.any(mask):
+    if len(x) < 2:
         return
 
-    ymin, ymax = ax.get_ylim()
+    order = np.argsort(x)
+    x = x[order]
+    y = y[order]
+
+    shade_start = max(xmin, x[0])
+    shade_end = min(xmax, x[-1])
+
+    if shade_start >= shade_end:
+        return
+
+    mask = (x > shade_start) & (x < shade_end)
+
+    x_fill = x[mask]
+    y_fill = y[mask]
+
+    y_start = np.interp(shade_start, x, y)
+    y_end = np.interp(shade_end, x, y)
+
+    x_fill = np.concatenate(([shade_start], x_fill, [shade_end]))
+    y_fill = np.concatenate(([y_start], y_fill, [y_end]))
+
+    ymin, _ = ax.get_ylim()
 
     ax.fill_between(
-        x[mask],
-        y[mask],
+        x_fill,
+        y_fill,
         y2=ymin,
         color=style.get("color", curve.style.color),
         alpha=float(style.get("alpha", 0.25)),

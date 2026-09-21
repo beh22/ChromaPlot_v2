@@ -979,18 +979,18 @@ class PlotSettingsPanel(QWidget):
             )
 
         if secondary_y_span is not None:
-            self.y_major_spacing_spin.setSingleStep(
+            self.secondary_y_major_spacing_spin.setSingleStep(
                 self._minimum_spacing(secondary_y_span, MAX_MAJOR_TICKS)
             )
-            self.y_minor_spacing_spin.setSingleStep(
+            self.secondary_y_minor_spacing_spin.setSingleStep(
                 self._minimum_spacing(secondary_y_span, MAX_MINOR_TICKS)
             )
 
         if tertiary_y_span is not None:
-            self.y_major_spacing_spin.setSingleStep(
+            self.tertiary_y_major_spacing_spin.setSingleStep(
                 self._minimum_spacing(tertiary_y_span, MAX_MAJOR_TICKS)
             )
-            self.y_minor_spacing_spin.setSingleStep(
+            self.tertiary_y_minor_spacing_spin.setSingleStep(
                 self._minimum_spacing(tertiary_y_span, MAX_MINOR_TICKS)
             )         
 
