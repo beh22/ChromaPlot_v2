@@ -123,9 +123,10 @@ class VerticalMarkerWindow(QDialog):
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.Stretch)
         header.setSectionResizeMode(2, QHeaderView.Fixed)
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.Fixed)
 
         self.values_table.setColumnWidth(2, 60)
+        self.values_table.setColumnWidth(3, 100)
 
         self.appearance_toggle = QToolButton()
         self.appearance_toggle.setText("Appearance")
