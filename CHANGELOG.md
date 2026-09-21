@@ -5,7 +5,11 @@
 ### Added
 - Added an interactive vertical marker for inspecting values across all visible curves, with dragging, keyboard movement, and direct position entry
 - Added customisable vertical marker appearance and optional inclusion in exported figures
-- 
+- Added optional secondary and tertiary Y axes, allowing individual curves to be assigned to separate axes
+- Added independent labels, limits, and tick spacing controls for secondary and tertiary Y axes, with configurable tertiary axis positioning
+
+### Changed
+- Shaded region names are now automatically kept unique by adding a numeric suffix when needed
 
 
 ## Version 2.1.0 - 2026-07-17

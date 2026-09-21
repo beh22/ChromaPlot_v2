@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from chromaplot.core.models import Annotation, Curve, Dataset
+from chromaplot.core.models import Annotation, Curve, Dataset, Project
 
 from .dialog_geometry import (
     restore_dialog_geometry,
@@ -34,14 +34,18 @@ class ShadedRegionDialog(QDialog):
 
     def __init__(
         self,
+        project: Project,
         dataset: Dataset,
         curve: Curve,
         parent=None,
     ):
         super().__init__(parent)
 
+        self.project = project
         self.dataset = dataset
         self.curve = curve
+
+        self.annotation_id: str | None = None
 
         self.selected_color = curve.style.color
 
@@ -73,7 +77,10 @@ class ShadedRegionDialog(QDialog):
         general_form = QFormLayout(general_group)
 
         self.label_edit = QLineEdit()
-        self.label_edit.setText(f"{self.curve.name} region")
+
+        default_label = self.project.unique_shaded_region_label(f"{self.curve.name} region")
+
+        self.label_edit.setText(default_label)
         general_form.addRow("Label", self.label_edit)
 
         self.curve_label = QLabel(self.curve.name)
@@ -304,8 +311,15 @@ class ShadedRegionDialog(QDialog):
             if mode == "Fractions":
                 start_fraction, end_fraction = end_fraction, start_fraction
 
+        label = self.project.unique_shaded_region_label(
+            self.label_edit.text(),
+            exclude_annotation_id=self.annotation_id,
+        )
+
+        self.label_edit.setText(label)
+
         return {
-            "label": self.label_edit.text().strip(),
+            "label": label, 
             "mode": mode,
             "x_start": x_start,
             "x_end": x_end,
@@ -329,6 +343,9 @@ class ShadedRegionDialog(QDialog):
 
     def load_annotation(self, annotation: Annotation) -> None:
         """Populate the dialog from an existing shaded-region annotation"""
+
+        self.annotation_id = annotation.id
+
         data = annotation.data
         style = annotation.style
 

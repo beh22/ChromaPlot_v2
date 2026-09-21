@@ -661,6 +661,30 @@ class Project:
             if ann.type == "shaded_region"
         ]
 
+    def unique_shaded_region_label(self,
+        label: str,
+        *,
+        exclude_annotation_id: str | None = None
+    ) -> str:
+        """Return a unique label for a shaded region"""
+        base_label = label.strip() or "Region"
+
+        existing_labels = {
+            str(annotation.data.get("label", "")).strip()
+            for annotation in self.shaded_regions()
+            if annotation.id != exclude_annotation_id
+        }
+
+        if base_label not in existing_labels:
+            return base_label
+
+        number = 2
+
+        while f"{base_label} {number}" in existing_labels:
+            number += 1
+
+        return f"{base_label} {number}"
+
     def shaded_regions_for_curve(self, curve_id: str) -> list[Annotation]:
         return [
             ann

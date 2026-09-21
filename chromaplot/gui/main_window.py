@@ -907,7 +907,7 @@ class MainWindow(QMainWindow):
         if dataset is None:
             return
 
-        dialog = ShadedRegionDialog(dataset, curve, self)
+        dialog = ShadedRegionDialog(self.project, dataset, curve, self)
 
         def on_fraction_visibility_changed(visible: bool) -> None:
             self.dataset_settings_panel.set_dataset(dataset)
@@ -1030,7 +1030,7 @@ class MainWindow(QMainWindow):
             )
             return
 
-        dialog = ShadedRegionDialog(dataset, curve, self)
+        dialog = ShadedRegionDialog(self.project, dataset, curve, self)
         dialog.load_annotation(annotation)
 
         self._active_shaded_region_dialog = dialog

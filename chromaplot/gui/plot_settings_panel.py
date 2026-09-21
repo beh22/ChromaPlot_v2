@@ -1037,11 +1037,11 @@ class PlotSettingsPanel(QWidget):
         magnitude = 10 ** exponent
         normalised = raw_spacing / magnitude
 
-        if normalised < 1:
+        if normalised <= 1:
             nice_value = 1
-        elif normalised < 2:
+        elif normalised <= 2:
             nice_value = 2
-        elif normalised < 5:
+        elif normalised <= 5:
             nice_value = 5
         else:
             nice_value = 10
