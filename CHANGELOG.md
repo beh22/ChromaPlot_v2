@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 2.2.0 - 2026-09-XX
+## Version 2.2.0 - 2026-09-24
 
 ### Added
 - Added an interactive vertical marker for inspecting values across all visible curves, with dragging, keyboard movement, and direct position entry
