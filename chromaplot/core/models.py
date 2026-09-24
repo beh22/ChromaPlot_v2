@@ -200,6 +200,8 @@ class PlotSettings:
     clean_plot: bool = False
     plot_xkcd: bool = False
 
+    curve_style_mode: str = "dataset"
+
     secondary_y_axis: YAxisSettings = field(default_factory=YAxisSettings)
     tertiary_y_axis: YAxisSettings = field(default_factory=YAxisSettings)
 
@@ -224,6 +226,7 @@ class PlotSettings:
             "grid": self.grid,
             "clean_plot": self.clean_plot,
             "plot_xkcd": self.plot_xkcd,
+            "curve_style_mode": self.curve_style_mode,
 
             "secondary_y_axis": self.secondary_y_axis.to_dict(),
             "tertiary_y_axis": self.tertiary_y_axis.to_dict(),
@@ -257,6 +260,7 @@ class PlotSettings:
             legend_columns=int(data.get("legend_columns", 5)),
             legend_label_mode=str(data.get("legend_label_mode", "auto")),
             plot_xkcd=bool(data.get("plot_xkcd", False)),
+            curve_style_mode=str(data.get("curve_style_mode", "dataset")),
 
             secondary_y_axis=YAxisSettings.from_dict(data.get("secondary_y_axis")),
             tertiary_y_axis=YAxisSettings.from_dict(data.get("tertiary_y_axis"))
@@ -560,6 +564,7 @@ class Dataset:
             "name": self.name,
             "source": self.source.to_dict() if self.source is not None else None,
             "metadata": self.metadata,
+            "display_color": self.display_color,
             "curves": [curve.to_dict() for curve in self.curves],
             "fractions": [fraction.to_dict() for fraction in self.fractions],
             "fraction_label_settings": self.fraction_label_settings.to_dict(),
@@ -571,6 +576,7 @@ class Dataset:
             id=str(data.get("id", new_id("dataset"))),
             name=str(data.get("name", "Untitled dataset")),
             source=DataSource.from_dict(data.get("source")),
+            display_color=data.get("display_color"),
             metadata=dict(data.get("metadata", {})),
             curves=[Curve.from_dict(curve_data) for curve_data in data.get("curves", [])],
             fractions=[Fraction.from_dict(fraction_data) for fraction_data in data.get("fractions", [])],
@@ -631,6 +637,10 @@ class Project:
 
     def add_dataset(self, dataset: Dataset) -> None:
         self.datasets.append(dataset)
+
+        from .styles import apply_automatic_styles_to_dataset
+
+        apply_automatic_styles_to_dataset(self, len(self.datasets) - 1)
 
     def remove_dataset(self, dataset_id: str) -> None:
         self.datasets = [dataset for dataset in self.datasets if dataset.id != dataset_id]

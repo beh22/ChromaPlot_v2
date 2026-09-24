@@ -10,7 +10,7 @@ from typing import Any
 import numpy as np
 
 from .models import Curve, DataSource, Dataset, Fraction, now_iso
-from .styles import CurveStyle, default_curve_style
+from .styles import default_style_for_curve_type
 
 
 # -----------------------------------------------------------------------------
@@ -450,30 +450,6 @@ def infer_curve_type(name: str, y_unit: str | None = None) -> str:
     if any(keyword in text for keyword in KNOWN_TEXT_CURVES):
         return "text"
     return "unknown"
-
-
-def default_style_for_curve_type(curve_type: str, index: int) -> CurveStyle:
-    """Choose initial style based on inferred curve type."""
-    # These are only defaults. The user can configure all of them later.
-    if curve_type == "uv":
-        return CurveStyle(color="#1f77b4", linewidth=1.5, linestyle="-")
-    if curve_type == "uv_auxiliary":
-        return CurveStyle(color="#1f77b4", linewidth=1.0, linestyle=":", alpha=0.6)
-    if curve_type == "conductivity":
-        return CurveStyle(color="#2ca02c", linewidth=1.2, linestyle="--")
-    if curve_type == "gradient":
-        return CurveStyle(color="#ff7f0e", linewidth=1.0, linestyle="-.")
-    if curve_type == "pressure":
-        return CurveStyle(color="#d62728", linewidth=1.0, linestyle=":")
-    if curve_type == "temperature":
-        return CurveStyle(color="#9467bd", linewidth=1.0, linestyle="-.")
-    if curve_type == "ph":
-        return CurveStyle(color="#8c564b", linewidth=1.0, linestyle="--")
-    if curve_type == "flow":
-        return CurveStyle(color="#7f7f7f", linewidth=1.0, linestyle=":")
-
-    return default_curve_style(index)
-
 
 def choose_default_visible_curve(curves: list[Curve]) -> str | None:
     """

@@ -7,6 +7,7 @@
 - Added customisable vertical marker appearance and optional inclusion in exported figures
 - Added optional secondary and tertiary Y axes, allowing individual curves to be assigned to separate axes
 - Added independent labels, limits, and tick spacing controls for secondary and tertiary Y axes, with configurable tertiary axis positioning
+- Added command-line support for opening ChromaPlot projects and importing one or more chromatography data files directly at launch
 
 ### Changed
 - Shaded region names are now automatically kept unique by adding a numeric suffix when needed
