@@ -11,6 +11,7 @@
 
 ### Changed
 - Shaded region names are now automatically kept unique by adding a numeric suffix when needed
+- Improved automatic curve styling with options to style curves by dataset (each dataset has it's own colour) or curve type (each curve type has its own colour)
 
 
 ## Version 2.1.0 - 2026-07-17
