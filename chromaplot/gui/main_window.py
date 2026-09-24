@@ -24,7 +24,7 @@ from chromaplot.core.importers import import_dataset
 from chromaplot.core.models import Annotation, Dataset, Project
 from chromaplot.core.project_io import load_project, save_project
 from chromaplot.core.plotting import autoscale_visible_x, autoscale_visible_y_axis
-from chromaplot.core.styles import DATASET_COLOURS
+from chromaplot.core.styles import apply_automatic_styles
 
 from .dataset_tree import DatasetTreeWidget
 from .plot_canvas import PlotCanvas
@@ -238,6 +238,7 @@ class MainWindow(QMainWindow):
         self.plot_canvas.preview_size_changed.connect(self.plot_settings_panel.set_current_preview_size)
 
         self.plot_settings_panel.use_preview_size_requested.connect(self.use_current_preview_size_for_export)
+        self.plot_settings_panel.curve_style_mode_changed.connect(self.on_curve_style_mode_changed)
 
         self.dataset_tree.dataset_rename_requested.connect(self.rename_dataset)
         self.dataset_tree.dataset_remove_requested.connect(self.remove_dataset)
@@ -566,9 +567,6 @@ class MainWindow(QMainWindow):
         for path in paths:
             try:
                 dataset = import_dataset(path)
-
-                self.apply_imported_dataset_colour(dataset)
-
                 self.project.add_dataset(dataset)
                 imported += 1
 
@@ -611,29 +609,6 @@ class MainWindow(QMainWindow):
                 "Some files could not be imported",
                 "\n\n".join(errors),
             )
-
-    def next_imported_dataset_colour(self) -> str:
-        used_colours = {
-            dataset.display_color.lower()
-            for dataset in self.project.datasets
-            if dataset.display_color is not None
-        }
-
-        for colour in DATASET_COLOURS:
-            if colour.lower() not in used_colours:
-                return colour
-
-        return DATASET_COLOURS[
-            len(self.project.datasets) % len(DATASET_COLOURS)
-        ]
-    
-    def apply_imported_dataset_colour(self, dataset: Dataset) -> None:
-        colour = self.next_imported_dataset_colour()
-
-        dataset.display_color = colour
-
-        for curve in dataset.curves:
-            curve.style.color = colour
 
     def export_figure(self) -> None:
         path, _ = QFileDialog.getSaveFileName(
@@ -738,6 +713,44 @@ class MainWindow(QMainWindow):
         self.mark_dirty()
 
     def on_plot_settings_changed(self) -> None:
+        self.redraw_plot()
+        self.mark_dirty()
+
+    def on_curve_style_mode_changed(self, mode: str) -> None:
+        settings = self.project.plot_settings
+        previous_mode = settings.curve_style_mode
+
+        if mode == previous_mode:
+            return
+
+        response = QMessageBox.question(
+            self,
+            "Change Curve Styling",
+            (
+                "Changing the curve styling mode will reset any manual "
+                "changes made to curve colours and line styles.\n\n"
+                "Do you want to continue?"
+            ),
+            QMessageBox.Yes | QMessageBox.Cancel,
+            QMessageBox.Cancel,
+        )
+
+        if response != QMessageBox.Yes:
+            self.plot_settings_panel.set_curve_style_mode(previous_mode)
+            return
+
+        settings.curve_style_mode = mode
+
+        apply_automatic_styles(self.project)
+
+        self.dataset_tree.set_project(self.project)
+
+        if self.curve_settings_panel.curve is not None:
+            self.curve_settings_panel.set_curve(
+                self.curve_settings_panel.curve,
+                self.curve_settings_panel.dataset_name,
+            )
+
         self.redraw_plot()
         self.mark_dirty()
 

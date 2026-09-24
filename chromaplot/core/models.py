@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import numpy as np
 
-from .styles import CurveStyle, default_curve_style
+from .styles import CurveStyle
 from .transforms import CurveTransform
 
 CURRENT_SCHEMA_VERSION = 2
@@ -493,11 +493,6 @@ class Dataset:
 
     def visible_curves(self) -> list[Curve]:
         return [curve for curve in self.curves if curve.visible]
-
-    def assign_default_styles(self) -> None:
-        """Assign deterministic default styles to all curves in this dataset."""
-        for i, curve in enumerate(self.curves):
-            curve.style = default_curve_style(i)
 
     def fractions_for_shading(self) -> list[Fraction]:
         """

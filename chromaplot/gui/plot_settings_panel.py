@@ -32,6 +32,7 @@ class PlotSettingsPanel(QWidget):
     """Panel for editing project-level plot settings."""
 
     plot_settings_changed = pyqtSignal()
+    curve_style_mode_changed = pyqtSignal(str)
     autoscale_requested = pyqtSignal()
     use_preview_size_requested = pyqtSignal()
 
@@ -256,6 +257,11 @@ class PlotSettingsPanel(QWidget):
         # -------------------------
         self.display_group = QGroupBox("Display")
         display_form = QFormLayout(self.display_group)
+
+        self.curve_style_mode_combo = QComboBox()
+        self.curve_style_mode_combo.addItem("By dataset", "dataset")
+        self.curve_style_mode_combo.addItem("By curve type", "curve_type")
+        display_form.addRow("Curve styling", self.curve_style_mode_combo)
 
         self.show_legend_check = QCheckBox("Show legend")
         display_form.addRow("", self.show_legend_check)
@@ -519,6 +525,7 @@ class PlotSettingsPanel(QWidget):
 
         self.use_preview_size_button.clicked.connect(self.use_preview_size_requested.emit)
 
+        self.curve_style_mode_combo.currentIndexChanged.connect(self._curve_style_mode_changed)
         self.show_legend_check.stateChanged.connect(self._apply_all)
         self.legend_location_combo.currentTextChanged.connect(self._apply_all)
         self.legend_label_mode_combo.currentTextChanged.connect(self._apply_all)
@@ -664,6 +671,10 @@ class PlotSettingsPanel(QWidget):
         self.figure_width_spin.setValue(settings.figure_width)
         self.figure_height_spin.setValue(settings.figure_height)
 
+        style_index = self.curve_style_mode_combo.findData(settings.curve_style_mode)
+        if style_index >= 0:
+            self.curve_style_mode_combo.setCurrentIndex(style_index)
+
         self.show_legend_check.setChecked(settings.show_legend)
         self.legend_location_combo.setCurrentText(settings.legend_location)
 
@@ -795,6 +806,8 @@ class PlotSettingsPanel(QWidget):
 
             if ymin != ymax:
                 secondary.limits = (ymin, ymax)
+            else:
+                secondary.limits = None
         else:
             secondary.limits = None
 
@@ -1079,3 +1092,28 @@ class PlotSettingsPanel(QWidget):
 
         self.settings.tertiary_y_axis.label_is_auto = False
         self._apply_all()
+
+    def _curve_style_mode_changed(self) -> None:
+        if self._updating or self.settings is None:
+            return
+
+        mode = self.curve_style_mode_combo.currentData()
+
+        if mode is None:
+            return
+
+        self.curve_style_mode_changed.emit(str(mode))
+
+    def set_curve_style_mode(self, mode: str) -> None:
+        """Set the curve styling control without emitting a change"""
+        index = self.curve_style_mode_combo.findData(mode)
+
+        if index < 0:
+            return
+
+        self._updating = True
+
+        try:
+            self.curve_style_mode_combo.setCurrentIndex(index)
+        finally:
+            self._updating = False
