@@ -1,19 +1,21 @@
 from __future__ import annotations
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QRegularExpression
+from PyQt5.QtGui import QRegularExpressionValidator, QColor
 from PyQt5.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QFormLayout,
-    QLineEdit,
     QCheckBox,
-    QPushButton,
     QColorDialog,
-    QDoubleSpinBox,
     QComboBox,
-    QLabel,
+    QDoubleSpinBox,
+    QFormLayout,
     QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
     QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
 
 from chromaplot.core.models import Curve
@@ -87,10 +89,29 @@ class CurveSettingsPanel(QWidget):
         style_form = QFormLayout(self.style_group)
 
         self.color_button = QPushButton("Choose colour")
-        self.color_preview = QLabel()
-        self.color_preview.setFixedHeight(20)
         style_form.addRow("Colour", self.color_button)
-        style_form.addRow("Preview", self.color_preview)
+
+        color_layout = QHBoxLayout()
+        color_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.color_preview = QLabel()
+        self.color_preview.setFixedSize(24, 20)
+
+        self.color_hex_edit = QLineEdit()
+        self.color_hex_edit.setMaxLength(7)
+        self.color_hex_edit.setFixedWidth(90)
+        self.color_hex_edit.setPlaceholderText("#RRGGBB")
+
+        hex_validator = QRegularExpressionValidator(
+            QRegularExpression(r"^#[0-9A-Fa-f]{6}$"), self.color_hex_edit
+        )
+        self.color_hex_edit.setValidator(hex_validator)
+
+        color_layout.addWidget(self.color_preview)
+        color_layout.addWidget(self.color_hex_edit)
+        color_layout.addStretch()
+
+        style_form.addRow("Preview", color_layout)
 
         self.linewidth_spin = QDoubleSpinBox()
         self.linewidth_spin.setRange(0.1, 20.0)
@@ -160,6 +181,7 @@ class CurveSettingsPanel(QWidget):
         self.y_axis_combo.currentIndexChanged.connect(self._apply_all)
         self.visible_check.stateChanged.connect(self._apply_all)
         self.color_button.clicked.connect(self._choose_color)
+        self.color_hex_edit.editingFinished.connect(self._apply_color_hex)
         self.linewidth_spin.valueChanged.connect(self._apply_all)
         self.linestyle_combo.currentTextChanged.connect(self._apply_all)
         self.alpha_spin.valueChanged.connect(self._apply_all)
@@ -198,6 +220,7 @@ class CurveSettingsPanel(QWidget):
             self.y_label.setText("-")
             self.dataset_label.setText("-")
             self._set_color_preview("#ffffff")
+            self.color_hex_edit.clear()
             self._updating = False
             return
 
@@ -209,6 +232,7 @@ class CurveSettingsPanel(QWidget):
         self.y_label.setText(f"{curve.y_label} ({curve.y_unit})")
         self.dataset_label.setText(dataset_name or "-")
         self._set_color_preview(curve.style.color)
+        self.color_hex_edit.setText(QColor(curve.style.color).name().upper())
         self.linewidth_spin.setValue(curve.style.linewidth)
         self.linestyle_combo.setCurrentText(curve.style.linestyle)
         self.alpha_spin.setValue(curve.style.alpha)
@@ -273,17 +297,58 @@ class CurveSettingsPanel(QWidget):
 
         self.curve_changed.emit(self.curve.id)
 
+    def _apply_color_hex(self) -> None:
+        if self._updating or self.curve is None:
+            return
+
+        color_hex = self.color_hex_edit.text().strip()
+
+        color = QColor(color_hex)
+
+        if not color.isValid():
+            self.color_hex_edit.setText(
+                QColor(self.curve.style.color).name().upper()
+            )
+            return
+
+        color_hex = color.name().upper()
+
+        if color_hex.lower() == self.curve.style.color.lower():
+            self.color_hex_edit.setText(color_hex)
+            return
+
+        self.curve.style.color = color_hex
+
+        self._set_color_preview(color_hex)
+        self.color_hex_edit.setText(color_hex)
+
+        self.curve_changed.emit(self.curve.id)
+            
     def _choose_color(self) -> None:
         if self._updating or self.curve is None:
             return
 
-        color = QColorDialog.getColor(parent=self)
+        current_color = QColor(self.curve.style.color)
+
+        color = QColorDialog.getColor(
+            current_color,
+            self,
+            "Choose curve color",
+        )
+
         if not color.isValid():
             return
 
-        color_hex = color.name()
+        color_hex = color.name().upper()
+
+        if color_hex.lower() == self.curve.style.color.lower():
+            return
+
         self.curve.style.color = color_hex
+
         self._set_color_preview(color_hex)
+        self.color_hex_edit.setText(color_hex)
+
         self.curve_changed.emit(self.curve.id)
 
     def _reset_transform(self) -> None:
@@ -298,6 +363,8 @@ class CurveSettingsPanel(QWidget):
         self.color_preview.setStyleSheet(
             f"background-color: {color}; border: 1px solid #666;"
         )
+
+        self.color_preview.setToolTip(color.upper())    
 
     def _request_add_shaded_region(self) -> None:
         if self.curve is not None:

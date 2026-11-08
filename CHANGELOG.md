@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 2.2.1 - 2026-11-08
+
+### Changed
+- Improved curve colour controls with editable hex codes and colour picker initialisation using the current curve colour
+
+
 ## Version 2.2.0 - 2026-09-24
 
 ### Added
