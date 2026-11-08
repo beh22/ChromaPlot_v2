@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QRegularExpression
+from PyQt5.QtGui import QRegularExpressionValidator, QColor
 from PyQt5.QtWidgets import (
     QCheckBox,
     QColorDialog,
@@ -173,19 +174,31 @@ class ShadedRegionDialog(QDialog):
         appearance_group = QGroupBox("Appearance")
         appearance_form = QFormLayout(appearance_group)
 
-        color_row = QWidget()
-        color_layout = QHBoxLayout(color_row)
+        self.color_button = QPushButton("Choose colour...")
+        appearance_form.addRow("Colour", self.color_button)
+
+        color_layout = QHBoxLayout()
         color_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.color_button = QPushButton("Choose colour...")
         self.color_preview = QLabel()
-        self.color_preview.setFixedSize(40, 20)
+        self.color_preview.setFixedSize(24, 20)
 
-        color_layout.addWidget(self.color_button)
+        self.color_hex_edit = QLineEdit()
+        self.color_hex_edit.setMaxLength(7)
+        self.color_hex_edit.setFixedWidth(90)
+        self.color_hex_edit.setPlaceholderText("#RRGGBB")
+
+        hex_validator = QRegularExpressionValidator(
+            QRegularExpression(r"^#[0-9A-Fa-f]{6}$"),
+            self.color_hex_edit,
+        )
+        self.color_hex_edit.setValidator(hex_validator)
+
         color_layout.addWidget(self.color_preview)
+        color_layout.addWidget(self.color_hex_edit)
         color_layout.addStretch()
 
-        appearance_form.addRow("Colour", color_row)
+        appearance_form.addRow("Preview", color_layout)
 
         self.alpha_spin = QDoubleSpinBox()
         self.alpha_spin.setRange(0.0, 1.0)
@@ -208,6 +221,9 @@ class ShadedRegionDialog(QDialog):
         layout.addWidget(self.buttons)
 
         self._set_color_preview(self.selected_color)
+        self.color_hex_edit.setText(
+            QColor(self.selected_color).name().upper()
+        )
 
     # ------------------------------------------------------------------
     # Signal connections
@@ -221,6 +237,10 @@ class ShadedRegionDialog(QDialog):
 
         self.color_button.clicked.connect(
             self._choose_color
+        )
+
+        self.color_hex_edit.editingFinished.connect(
+            self._apply_color_hex
         )
 
         self.buttons.accepted.connect(self.accept)
@@ -254,19 +274,43 @@ class ShadedRegionDialog(QDialog):
             """
         )
 
+        self.color_preview.setToolTip(color.upper())
+
     # ------------------------------------------------------------------
     # Colour selection
     # ------------------------------------------------------------------
 
     def _choose_color(self) -> None:
 
-        color = QColorDialog.getColor(parent=self)
+        color = QColorDialog.getColor(
+            QColor(self.selected_color),
+            self,
+            "Choose shaded region colour",
+        )
 
         if not color.isValid():
             return
 
-        self.selected_color = color.name()
+        self.selected_color = color.name().upper()
+
         self._set_color_preview(self.selected_color)
+        self.color_hex_edit.setText(self.selected_color)
+
+    def _apply_color_hex(self) -> None:
+        color_hex = self.color_hex_edit.text().strip()
+
+        color = QColor(color_hex)
+
+        if not color.isValid():
+            self.color_hex_edit.setText(
+                QColor(self.selected_color).name().upper()
+            )
+            return
+
+        self.selected_color = color.name().upper()
+
+        self._set_color_preview(self.selected_color)
+        self.color_hex_edit.setText(self.selected_color)
 
     # ------------------------------------------------------------------
     # Public API
@@ -380,11 +424,17 @@ class ShadedRegionDialog(QDialog):
             style.get("color", self.curve.style.color)
         )
         self.alpha_spin.setValue(float(style.get("alpha", 0.25)))
+
         self._set_color_preview(self.selected_color)
+        self.color_hex_edit.setText(
+            QColor(self.selected_color).name().upper()
+        )
 
         self._update_mode_visibility()
 
     def accept(self) -> None:
+        self._apply_color_hex()
+        
         save_dialog_geometry(
             self,
             "shaded_region",
