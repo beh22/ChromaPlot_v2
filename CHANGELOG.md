@@ -2,6 +2,9 @@
 
 ## Version 2.2.1 - 2026-11-08
 
+### Added
+- Added the ability to copy selected style properties (colour, line width, line style, and opacity) between curves
+
 ### Changed
 - Improved curve colour controls with editable hex codes and colour picker initialisation using the current curve colour
 

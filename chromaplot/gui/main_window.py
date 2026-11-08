@@ -35,6 +35,7 @@ from .fraction_settings_dialog import FractionSettingsDialog
 from .shaded_region_dialog import ShadedRegionDialog
 from .shading_settings_panel import ShadingSettingsPanel
 from .vertical_marker_window import VerticalMarkerWindow
+from .copy_curve_style_dialog import CopyCurveStyleDialog
 
 
 MAIN_WINDOW_STATE_VERSION = 1
@@ -231,6 +232,7 @@ class MainWindow(QMainWindow):
         self.dataset_tree.dataset_selected.connect(self.on_dataset_selected)
         
         self.curve_settings_panel.curve_changed.connect(self.on_curve_settings_changed)
+        self.curve_settings_panel.copy_curve_style_requested.connect(self.copy_curve_style)
 
         self.plot_settings_panel.plot_settings_changed.connect(self.on_plot_settings_changed)
         self.plot_settings_panel.autoscale_requested.connect(self.autoscale_plot)
@@ -711,6 +713,52 @@ class MainWindow(QMainWindow):
         self.dataset_tree.set_project(self.project)
         self.redraw_plot()
         self.mark_dirty()
+
+    def copy_curve_style(self, destination_curve_id: str) -> None:
+        destination_curve = self.project.get_curve(destination_curve_id)
+
+        if destination_curve is None:
+            return
+
+        dialog = CopyCurveStyleDialog(self.project, destination_curve_id, self)
+
+        if not dialog.exec():
+            return
+
+        source_curve_id = dialog.source_curve_id()
+
+        if source_curve_id is None:
+            return
+
+        source_curve = self.project.get_curve(source_curve_id)
+
+        if source_curve is None:
+            return
+
+        properties = dialog.selected_properties()
+
+        if not properties:
+            return
+
+        changed = False
+
+        for property_name in properties:
+            source_value = getattr(source_curve.style, property_name)
+            destination_value = getattr(destination_curve.style, property_name)
+
+            if source_value != destination_value:
+                setattr(destination_curve.style, property_name, source_value)
+                changed = True
+
+        if not changed:
+            return
+
+        self.curve_settings_panel.set_curve(
+            destination_curve,
+            self.curve_settings_panel.dataset_name,
+        )
+
+        self.on_curve_settings_changed(destination_curve_id)
 
     def on_plot_settings_changed(self) -> None:
         self.redraw_plot()

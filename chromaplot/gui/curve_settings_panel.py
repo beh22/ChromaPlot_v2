@@ -26,6 +26,7 @@ class CurveSettingsPanel(QWidget):
 
     curve_changed = pyqtSignal(str)
     add_shaded_region_requested = pyqtSignal(str)
+    copy_curve_style_requested = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -129,6 +130,9 @@ class CurveSettingsPanel(QWidget):
         self.alpha_spin.setDecimals(2)
         style_form.addRow("Alpha", self.alpha_spin)
 
+        self.copy_style_button = QPushButton("Copy style from another curve...")
+        style_form.addRow("", self.copy_style_button)
+
         main_layout.addWidget(self.style_group)
 
         self.transform_group = QGroupBox("Display transform")
@@ -191,6 +195,7 @@ class CurveSettingsPanel(QWidget):
         self.y_scale_spin.valueChanged.connect(self._apply_all)
         self.reset_transform_button.clicked.connect(self._reset_transform)
         self.add_shaded_region_button.clicked.connect(self._request_add_shaded_region)
+        self.copy_style_button.clicked.connect(self._request_copy_curve_style)
 
     # ------------------------------------------------------------------
     # Public API
@@ -369,3 +374,7 @@ class CurveSettingsPanel(QWidget):
     def _request_add_shaded_region(self) -> None:
         if self.curve is not None:
             self.add_shaded_region_requested.emit(self.curve.id)
+
+    def _request_copy_curve_style(self) -> None:
+        if self.curve is not None:
+            self.copy_curve_style_requested.emit(self.curve.id)
